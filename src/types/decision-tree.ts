@@ -82,3 +82,68 @@ export interface StageInfo {
   description: string;
   icon: string;
 }
+
+// --- Enhanced intake types ---
+
+export interface ProjectIdea {
+  title: string;
+  description: string;
+  domain: string;
+  timeline: string;
+}
+
+export interface GatherDetails {
+  dataType: string;
+  sourceSystem: string;
+  dataSize: string;
+  additionalNotes: string;
+}
+
+export interface Refinement {
+  id: string;
+  taskType: string;
+  description: string;
+  dataPrep: string;
+}
+
+export interface RefineDetails {
+  refinements: Refinement[];
+  additionalContext: string;
+}
+
+export interface OutputSelection {
+  format: OutputFormat;
+  description: string;
+  feasibility: FeasibilityResult;
+}
+
+export interface PresentDetails {
+  outputs: OutputSelection[];
+}
+
+export interface IntakePayload {
+  version: string;
+  generatedAt: string;
+  sessionId: string;
+  projectIdea: ProjectIdea;
+  gather: {
+    protectionLevel: ProtectionLevel;
+    protectionLevelLabel: string;
+    details: GatherDetails;
+  };
+  refine: {
+    refinements: Refinement[];
+    audience: string;
+    additionalContext: string;
+  };
+  present: {
+    outputs: Array<{
+      format: OutputFormat;
+      formatLabel: string;
+      description: string;
+      feasibility: Feasibility;
+      conditions?: string;
+    }>;
+  };
+  nextSteps: string[];
+}

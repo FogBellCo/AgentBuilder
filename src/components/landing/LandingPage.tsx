@@ -1,8 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Search, Sliders, Monitor } from 'lucide-react';
+import { ArrowRight, Lightbulb, Search, Sliders, Monitor } from 'lucide-react';
 
-const stages = [
+const steps = [
+  {
+    icon: Lightbulb,
+    label: 'Describe',
+    desc: 'Tell us what you want to build or accomplish with AI',
+  },
   {
     icon: Search,
     label: 'Gather',
@@ -32,37 +37,41 @@ export function LandingPage() {
         className="max-w-2xl text-center"
       >
         <h1 className="text-4xl font-bold text-navy leading-tight mb-4">
-          AI Workflow Guide
+          AI Workflow Builder
         </h1>
-        <p className="text-lg text-gray-600 leading-relaxed mb-12">
-          This tool helps you figure out how AI can work with your UCSD data, step by step.
-          No technical expertise required.
+        <p className="text-lg text-gray-600 leading-relaxed mb-4">
+          Describe what you want to build with UCSD AI tools, and we'll help you
+          assess the feasibility and complexity of your idea — step by step.
+        </p>
+        <p className="text-sm text-gray-500 leading-relaxed mb-12">
+          No technical expertise required. You'll get a summary you can share
+          and a structured intake file for the AI team.
         </p>
       </motion.div>
 
-      {/* Three stage preview */}
+      {/* Four step preview */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
         className="mb-12 flex flex-col md:flex-row items-center gap-4 md:gap-0"
       >
-        {stages.map((stage, i) => (
-          <div key={stage.label} className="flex items-center">
-            <div className="flex flex-col items-center text-center w-48">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-sand text-navy mb-3">
-                <stage.icon className="h-6 w-6" />
+        {steps.map((step, i) => (
+          <div key={step.label} className="flex items-center">
+            <div className="flex flex-col items-center text-center w-40">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sand text-navy mb-3">
+                <step.icon className="h-5 w-5" />
               </div>
-              <h3 className="text-sm font-bold text-navy uppercase tracking-wider mb-1">
-                {stage.label}
+              <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-1">
+                {step.label}
               </h3>
-              <p className="text-xs text-gray-500 leading-relaxed px-2">
-                {stage.desc}
+              <p className="text-[11px] text-gray-500 leading-relaxed px-1">
+                {step.desc}
               </p>
             </div>
-            {i < stages.length - 1 && (
-              <div className="hidden md:block mx-4">
-                <ArrowRight className="h-5 w-5 text-gray-300" />
+            {i < steps.length - 1 && (
+              <div className="hidden md:block mx-2">
+                <ArrowRight className="h-4 w-4 text-gray-300" />
               </div>
             )}
           </div>
@@ -73,7 +82,7 @@ export function LandingPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
-        onClick={() => navigate('/pipeline')}
+        onClick={() => navigate('/describe')}
         className="group flex items-center gap-3 rounded-lg bg-blue px-8 py-4 text-white font-medium tracking-wide uppercase text-sm hover:bg-navy transition-colors"
       >
         Get Started
