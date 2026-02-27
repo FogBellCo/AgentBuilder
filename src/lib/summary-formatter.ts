@@ -10,6 +10,21 @@ import type {
 import { protectionLevels } from '@/data/protection-levels';
 import { outputFormats } from '@/data/output-formats';
 import { checkFeasibility } from '@/lib/tree-engine';
+import { gatherTree } from '@/data/gather-tree';
+
+// Build lookup for gather-start option IDs
+const gatherStartNode = gatherTree.find((n) => n.id === 'gather-start');
+const gatherOptionLookup: Record<string, { label: string; level: string }> = {};
+if (gatherStartNode) {
+  for (const opt of gatherStartNode.options) {
+    if (opt.mapsToProtectionLevel) {
+      gatherOptionLookup[opt.id] = {
+        label: opt.label,
+        level: opt.mapsToProtectionLevel,
+      };
+    }
+  }
+}
 
 interface SummaryState {
   sessionId: string;
@@ -26,6 +41,14 @@ export function buildIntakeJson(state: SummaryState): IntakePayload {
   const protectionLevel: ProtectionLevel =
     state.gatherResult?.protectionLevel ?? 'P1';
   const levelInfo = protectionLevels[protectionLevel];
+
+  // Parse all selected data sources from gather-start multi-select answer
+  const gatherStartAnswer = state.gatherResult?.answers?.['gather-start'] ?? '';
+  const selectedDataSources = gatherStartAnswer
+    .split(',')
+    .filter(Boolean)
+    .map((id) => gatherOptionLookup[id])
+    .filter(Boolean);
 
   const refineAnswers = state.refineResult?.answers ?? {};
   const audience = refineAnswers['refine-audience'] ?? '';
@@ -69,6 +92,7 @@ export function buildIntakeJson(state: SummaryState): IntakePayload {
     gather: {
       protectionLevel,
       protectionLevelLabel: levelInfo.label,
+      selectedDataSources,
       details: state.gatherDetails ?? {
         dataType: [],
         sourceSystem: '',
@@ -144,6 +168,11 @@ export function formatSummaryAsPlainText(state: SummaryState): string {
   lines.push(
     `Protection Level: ${payload.gather.protectionLevel} (${payload.gather.protectionLevelLabel})`,
   );
+  if (payload.gather.selectedDataSources.length > 1) {
+    lines.push(
+      `Selected Data Sources: ${payload.gather.selectedDataSources.map((s) => `${s.level} (${s.label})`).join(', ')}`,
+    );
+  }
   if (payload.gather.details.dataType.length > 0) {
     lines.push(`Data Type: ${payload.gather.details.dataType.join(', ')}`);
   }

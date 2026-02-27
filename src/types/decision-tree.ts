@@ -129,6 +129,7 @@ export interface IntakePayload {
   gather: {
     protectionLevel: ProtectionLevel;
     protectionLevelLabel: string;
+    selectedDataSources: Array<{ level: string; label: string }>;
     details: GatherDetails;
   };
   refine: {

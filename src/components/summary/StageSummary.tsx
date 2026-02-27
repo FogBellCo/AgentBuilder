@@ -9,6 +9,21 @@ import type {
 } from '@/types/decision-tree';
 import { protectionLevels } from '@/data/protection-levels';
 import { outputFormats } from '@/data/output-formats';
+import { gatherTree } from '@/data/gather-tree';
+
+// Build a lookup of gather-start option IDs to their labels and protection levels
+const gatherStartNode = gatherTree.find((n) => n.id === 'gather-start');
+const gatherOptionInfo: Record<string, { label: string; level: string }> = {};
+if (gatherStartNode) {
+  for (const opt of gatherStartNode.options) {
+    if (opt.mapsToProtectionLevel) {
+      gatherOptionInfo[opt.id] = {
+        label: opt.label,
+        level: opt.mapsToProtectionLevel,
+      };
+    }
+  }
+}
 
 interface StageSummaryProps {
   stage: Stage;
@@ -110,21 +125,55 @@ export function StageSummary({
         </div>
 
         {/* GATHER Details */}
-        {stage === 'GATHER' && gatherDetails && (
+        {stage === 'GATHER' && (
           <div className="mt-3 space-y-1.5 border-t border-gray-100 pt-3">
-            {gatherDetails.dataType.length > 0 && (
+            {/* Show all selected data source categories */}
+            {(() => {
+              const gatherStartAnswer = result.answers?.['gather-start'] ?? '';
+              const selectedIds = gatherStartAnswer.split(',').filter(Boolean);
+              const selectedSources = selectedIds
+                .map((id) => gatherOptionInfo[id])
+                .filter(Boolean);
+              if (selectedSources.length > 1) {
+                return (
+                  <div className="mb-1.5">
+                    <span className="text-xs font-medium text-navy">Data Sources:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedSources.map((src) => {
+                        const srcLevel = protectionLevels[src.level];
+                        return (
+                          <span
+                            key={src.level}
+                            className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium"
+                            style={{
+                              borderColor: `${srcLevel?.color}40`,
+                              backgroundColor: `${srcLevel?.color}10`,
+                              color: srcLevel?.color,
+                            }}
+                          >
+                            {src.level} — {src.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            {gatherDetails && gatherDetails.dataType.length > 0 && (
               <DetailRow label="Data Type" value={gatherDetails.dataType.join(', ')} />
             )}
-            {gatherDetails.sourceSystem && (
+            {gatherDetails?.sourceSystem && (
               <DetailRow
                 label="Source System"
                 value={gatherDetails.sourceSystem}
               />
             )}
-            {gatherDetails.dataSize && (
+            {gatherDetails?.dataSize && (
               <DetailRow label="Data Size" value={gatherDetails.dataSize} />
             )}
-            {gatherDetails.additionalNotes && (
+            {gatherDetails?.additionalNotes && (
               <DetailRow label="Notes" value={gatherDetails.additionalNotes} />
             )}
           </div>

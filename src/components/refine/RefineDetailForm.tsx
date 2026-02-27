@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Plus, Trash2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useSessionStore } from '@/store/session-store';
 import { generateId } from '@/lib/utils';
 import type { Refinement, RefineDetails } from '@/types/decision-tree';
@@ -77,6 +77,16 @@ export function RefineDetailForm({ initialTask, initialDataPrep }: RefineDetailF
       transition={{ duration: 0.4 }}
       className="mx-auto max-w-2xl py-8"
     >
+      <div className="mb-4">
+        <button
+          onClick={() => navigate('/pipeline')}
+          className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue transition-colors uppercase tracking-wider"
+        >
+          <ArrowLeft className="h-3 w-3" />
+          Back
+        </button>
+      </div>
+
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-navy mb-2">
           Detail Your Refinements
