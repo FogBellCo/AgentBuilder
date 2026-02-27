@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { ProgressBar } from '@/components/layout/ProgressBar';
@@ -11,7 +11,7 @@ import { Summary } from '@/pages/Summary';
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <div className="flex min-h-screen flex-col">
         <Header />
         <Breadcrumbs />
@@ -27,7 +27,7 @@ function App() {
         </main>
         <Footer />
       </div>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
