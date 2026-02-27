@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+/*
+ * UCSD Brand Design Tokens
+ * Colors: brand.ucsd.edu/visual-brand/color
+ * Typography: Swiss/International style with Roboto (UCSD web alternate for Brix Sans)
+ */
+
+@theme {
+  /* ── Core UCSD Colors ── */
+  --color-navy: #182B49;
+  --color-blue: #00629B;
+  --color-yellow: #FFCD00;
+  --color-gold: #C69214;
+
+  /* ── Accent Colors ── */
+  --color-turquoise: #00C6D7;
+  --color-magenta: #D462AD;
+  --color-sand: #F5F0E6;
+  --color-citron: #F3E500;
+  --color-orange: #FC8900;
+  --color-green: #6E963B;
+
+  /* ── Neutrals ── */
+  --color-white: #FFFFFF;
+  --color-gray-50: #F8F9FA;
+  --color-gray-100: #F1F3F5;
+  --color-gray-200: #E9ECEF;
+  --color-gray-300: #DEE2E6;
+  --color-gray-400: #CED4DA;
+  --color-gray-500: #ADB5BD;
+  --color-gray-600: #868E96;
+  --color-gray-700: #495057;
+  --color-gray-800: #343A40;
+  --color-gray-900: #212529;
+
+  /* ── Protection Level Colors ── */
+  --color-p1: #6E963B;
+  --color-p2: #00629B;
+  --color-p3: #FC8900;
+  --color-p4: #C0392B;
+
+  /* ── Swiss Typography Scale ── */
+  --font-sans: "Roboto", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+}
+
+/* ── Base Styles ── */
+
+html {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-navy);
+  background-color: var(--color-white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+/* React Flow overrides */
+.react-flow__node {
+  font-family: var(--font-sans);
+}
+
+.react-flow__attribution {
+  display: none;
+}
