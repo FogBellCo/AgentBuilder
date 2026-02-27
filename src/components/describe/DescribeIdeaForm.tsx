@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Lightbulb } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Lightbulb } from 'lucide-react';
 import { useSessionStore } from '@/store/session-store';
 import type { ProjectIdea } from '@/types/decision-tree';
 
@@ -55,6 +55,16 @@ export function DescribeIdeaForm() {
         transition={{ duration: 0.6 }}
         className="w-full max-w-2xl"
       >
+        <div className="mb-4">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue transition-colors uppercase tracking-wider"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            Back
+          </button>
+        </div>
+
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-sand text-navy">
             <Lightbulb className="h-6 w-6" />

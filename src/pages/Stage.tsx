@@ -189,6 +189,7 @@ export function Stage() {
         <OutputPicker
           onSelect={handleSelectFormat}
           onMultiSelect={handleMultiSelectConfirm}
+          onBack={() => navigate('/pipeline')}
         />
       </div>
     );

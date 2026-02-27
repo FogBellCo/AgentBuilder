@@ -147,13 +147,13 @@ export const refineTree: DecisionNode[] = [
   {
     id: 'refine-confirm',
     stage: 'REFINE',
-    question: 'Great — your refinement choices are set.',
-    description: 'The AI knows what to do, how to prepare the data, and who the output is for. Let\'s move to the final step.',
+    question: 'Great — let\'s add some detail to your refinement plan.',
+    description: 'You\'ve outlined the AI tasks, data preparation, and audience. Next, you can fine-tune each task with specific instructions.',
     inputType: 'confirmation',
     options: [
       {
         id: 'confirm-refine',
-        label: 'Continue to presentation options',
+        label: 'Continue to add details',
         icon: 'ArrowRight',
         nextNodeId: null,
       },

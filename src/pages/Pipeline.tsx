@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { PipelineView } from '@/components/pipeline/PipelineView';
 import { useSessionStore } from '@/store/session-store';
 
@@ -54,6 +54,16 @@ export function Pipeline() {
       className="py-8"
     >
       <div className="mx-auto max-w-5xl px-6">
+        <div className="mb-4">
+          <button
+            onClick={() => navigate('/describe')}
+            className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue transition-colors uppercase tracking-wider"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            Back
+          </button>
+        </div>
+
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-navy mb-2">Your AI Workflow</h1>
           <p className="text-sm text-gray-500 mb-1">

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Shield } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Shield } from 'lucide-react';
 import { useSessionStore } from '@/store/session-store';
 import { protectionLevels } from '@/data/protection-levels';
+import { gatherTree } from '@/data/gather-tree';
 import type { GatherDetails, ProtectionLevel } from '@/types/decision-tree';
 
 const dataTypeOptions = [
@@ -26,11 +27,32 @@ interface GatherDetailFormProps {
   protectionLevel: ProtectionLevel;
 }
 
+// Map gather-start option IDs to human-readable labels and their protection levels
+const gatherOptionLabels: Record<string, { label: string; level: string }> = {};
+const startNode = gatherTree.find((n) => n.id === 'gather-start');
+if (startNode) {
+  for (const opt of startNode.options) {
+    if (opt.mapsToProtectionLevel) {
+      gatherOptionLabels[opt.id] = {
+        label: opt.label,
+        level: opt.mapsToProtectionLevel,
+      };
+    }
+  }
+}
+
 export function GatherDetailForm({ protectionLevel }: GatherDetailFormProps) {
   const navigate = useNavigate();
-  const { gatherDetails, setGatherDetails } = useSessionStore();
+  const { gatherDetails, setGatherDetails, stageAnswers } = useSessionStore();
 
   const levelInfo = protectionLevels[protectionLevel];
+
+  // Parse all selected data sources from the multi-select answer
+  const gatherStartAnswer = stageAnswers.GATHER?.['gather-start'] ?? '';
+  const selectedSourceIds = gatherStartAnswer.split(',').filter(Boolean);
+  const selectedSources = selectedSourceIds
+    .map((id) => gatherOptionLabels[id])
+    .filter(Boolean);
 
   const [dataTypes, setDataTypes] = useState<string[]>(gatherDetails?.dataType ?? []);
   const [sourceSystem, setSourceSystem] = useState(gatherDetails?.sourceSystem ?? '');
@@ -61,6 +83,16 @@ export function GatherDetailForm({ protectionLevel }: GatherDetailFormProps) {
       transition={{ duration: 0.4 }}
       className="mx-auto max-w-2xl py-8"
     >
+      <div className="mb-4">
+        <button
+          onClick={() => navigate('/pipeline')}
+          className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue transition-colors uppercase tracking-wider"
+        >
+          <ArrowLeft className="h-3 w-3" />
+          Back
+        </button>
+      </div>
+
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Shield className="h-4 w-4" style={{ color: levelInfo.color }} />
@@ -78,6 +110,37 @@ export function GatherDetailForm({ protectionLevel }: GatherDetailFormProps) {
           These details help us understand your data source and prepare accurate recommendations.
         </p>
       </div>
+
+      {/* Show all selected data sources when multiple were chosen */}
+      {selectedSources.length > 1 && (
+        <div className="mb-6 rounded-lg border-2 border-blue/20 bg-blue/5 p-4">
+          <p className="text-xs font-bold text-navy uppercase tracking-wider mb-2">
+            Selected Data Sources
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {selectedSources.map((src) => {
+              const srcLevelInfo = protectionLevels[src.level];
+              return (
+                <span
+                  key={src.level}
+                  className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium"
+                  style={{
+                    borderColor: `${srcLevelInfo?.color}40`,
+                    backgroundColor: `${srcLevelInfo?.color}10`,
+                    color: srcLevelInfo?.color,
+                  }}
+                >
+                  <Shield className="h-3 w-3" />
+                  {src.level} — {src.label}
+                </span>
+              );
+            })}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Your effective protection level is <span className="font-medium">{protectionLevel}</span> (the most restrictive of your selections). All data sources are recorded in your intake.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-6">
         {/* Data Type (multi-select) */}

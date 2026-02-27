@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { outputFormats } from '@/data/output-formats';
 import { OutputCard } from './OutputCard';
 import type { OutputFormat, OutputFormatInfo } from '@/types/decision-tree';
@@ -8,9 +8,10 @@ import type { OutputFormat, OutputFormatInfo } from '@/types/decision-tree';
 interface OutputPickerProps {
   onSelect: (format: OutputFormatInfo) => void;
   onMultiSelect?: (outputs: Array<{ format: OutputFormat; description: string }>) => void;
+  onBack?: () => void;
 }
 
-export function OutputPicker({ onSelect, onMultiSelect }: OutputPickerProps) {
+export function OutputPicker({ onSelect, onMultiSelect, onBack }: OutputPickerProps) {
   const [selected, setSelected] = useState<
     Map<OutputFormat, string>
   >(new Map());
@@ -59,6 +60,18 @@ export function OutputPicker({ onSelect, onMultiSelect }: OutputPickerProps) {
       transition={{ duration: 0.4 }}
       className="mx-auto max-w-3xl"
     >
+      {onBack && (
+        <div className="mb-4">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue transition-colors uppercase tracking-wider"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            Back
+          </button>
+        </div>
+      )}
+
       <div className="mb-8 text-center">
         <h2 className="text-2xl font-bold text-navy">How do you want to see the results?</h2>
         <p className="mt-2 text-sm text-gray-500">

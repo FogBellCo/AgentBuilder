@@ -1,11 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, Share2, Copy, Check, Sparkles } from 'lucide-react';
+import { Download, Share2, Copy, Check, ArrowLeft, Users } from 'lucide-react';
 import { useSessionStore } from '@/store/session-store';
-import { useStartOver } from '@/hooks/use-start-over';
 import { ProjectIdeaSummary } from './ProjectIdeaSummary';
 import { StageSummary } from './StageSummary';
-import { NextSteps } from './NextSteps';
 import {
   buildIntakeJson,
   downloadJson,
@@ -18,14 +17,12 @@ const stageOrder: Stage[] = ['GATHER', 'REFINE', 'PRESENT'];
 
 export function SummaryView() {
   const store = useSessionStore();
+  const navigate = useNavigate();
   const { stages, projectIdea, gatherDetails, refineDetails, presentDetails } =
     store;
-  const startOver = useStartOver();
   const [copied, setCopied] = useState(false);
 
   const allComplete = stageOrder.every((s) => stages[s].status === 'complete');
-  const gatherResult = stages.GATHER.result;
-  const presentResult = stages.PRESENT.result;
 
   const summaryState = {
     sessionId: store.sessionId,
@@ -60,40 +57,71 @@ export function SummaryView() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="mx-auto max-w-2xl py-8"
+      className="mx-auto max-w-2xl px-6 py-8"
     >
+      {/* Back button */}
+      <div className="mb-4">
+        <button
+          onClick={() => navigate('/pipeline')}
+          className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue transition-colors uppercase tracking-wider"
+        >
+          <ArrowLeft className="h-3 w-3" />
+          Back
+        </button>
+      </div>
+
       {/* Header */}
       <div className="mb-6 text-center">
         <h1 className="text-3xl font-bold text-navy mb-2">
           {allComplete ? 'Your AI Workflow Summary' : 'Progress So Far'}
         </h1>
-        {allComplete ? (
-          <div className="flex items-center justify-center gap-2 mt-3">
-            <Sparkles className="h-4 w-4 text-blue" />
-            <p className="text-sm text-gray-600">
-              Here's your personalized AI workflow plan. We've mapped out the data,
-              defined the tasks, and picked the format — you're ready for next steps.
-            </p>
-          </div>
-        ) : (
+        {!allComplete && (
           <p className="text-sm text-gray-500">
             Complete all three stages to see your full summary.
           </p>
         )}
       </div>
 
-      {/* Next Steps — Promoted to top when complete */}
-      {allComplete && gatherResult && (
-        <div className="mb-6">
-          <NextSteps
-            protectionLevel={gatherResult.protectionLevel}
-            outputFormat={presentResult?.outputFormat}
-            onStartOver={startOver}
-          />
+      {/* TritonAI outreach message — top of page when complete */}
+      {allComplete && (
+        <div className="mb-6 rounded-lg border-2 border-blue/20 bg-blue/5 p-6">
+          <div className="flex items-start gap-3">
+            <Users className="h-5 w-5 text-blue shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-bold text-navy mb-1">
+                Thank you for completing your intake!
+              </h3>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                A member of the TritonAI team will reach out to you with next steps
+                based on your responses. You'll receive a detailed email with
+                recommendations tailored to your workflow.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Action Buttons — Right after next steps */}
+      {/* Project & Stage Details */}
+      <div className="space-y-4 mb-8">
+        {projectIdea && <ProjectIdeaSummary idea={projectIdea} />}
+
+        {stageOrder.map((stage) => {
+          const stageData = stages[stage];
+          if (stageData.status !== 'complete' || !stageData.result) return null;
+          return (
+            <StageSummary
+              key={stage}
+              stage={stage}
+              result={stageData.result}
+              gatherDetails={stage === 'GATHER' ? gatherDetails : undefined}
+              refineDetails={stage === 'REFINE' ? refineDetails : undefined}
+              presentDetails={stage === 'PRESENT' ? presentDetails : undefined}
+            />
+          );
+        })}
+      </div>
+
+      {/* Action Buttons — After summary details */}
       {allComplete && (
         <div className="mb-8 flex flex-wrap gap-3 justify-center">
           <button
@@ -127,35 +155,6 @@ export function SummaryView() {
             )}
           </button>
         </div>
-      )}
-
-      {/* Project & Stage Details */}
-      <div className="space-y-4 mb-8">
-        {projectIdea && <ProjectIdeaSummary idea={projectIdea} />}
-
-        {stageOrder.map((stage) => {
-          const stageData = stages[stage];
-          if (stageData.status !== 'complete' || !stageData.result) return null;
-          return (
-            <StageSummary
-              key={stage}
-              stage={stage}
-              result={stageData.result}
-              gatherDetails={stage === 'GATHER' ? gatherDetails : undefined}
-              refineDetails={stage === 'REFINE' ? refineDetails : undefined}
-              presentDetails={stage === 'PRESENT' ? presentDetails : undefined}
-            />
-          );
-        })}
-      </div>
-
-      {/* Next Steps fallback for incomplete summary */}
-      {!allComplete && gatherResult && (
-        <NextSteps
-          protectionLevel={gatherResult.protectionLevel}
-          outputFormat={presentResult?.outputFormat}
-          onStartOver={startOver}
-        />
       )}
     </motion.div>
   );
