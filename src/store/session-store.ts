@@ -6,6 +6,10 @@ import type {
   StageResult,
   ProtectionLevel,
   OutputFormat,
+  ProjectIdea,
+  GatherDetails,
+  RefineDetails,
+  PresentDetails,
 } from '@/types/decision-tree';
 import { generateId } from '@/lib/utils';
 
@@ -17,6 +21,12 @@ interface SessionState {
   history: Array<{ stage: Stage; nodeId: string }>;
   stageAnswers: Record<Stage, Record<string, string>>;
 
+  // Enhanced intake fields
+  projectIdea: ProjectIdea | null;
+  gatherDetails: GatherDetails | null;
+  refineDetails: RefineDetails | null;
+  presentDetails: PresentDetails | null;
+
   // Actions
   setCurrentStage: (stage: Stage) => void;
   setCurrentNode: (nodeId: string) => void;
@@ -26,6 +36,12 @@ interface SessionState {
   popHistory: () => { stage: Stage; nodeId: string } | undefined;
   resetSession: () => void;
   getEffectiveProtectionLevel: () => ProtectionLevel;
+
+  // Enhanced intake actions
+  setProjectIdea: (idea: ProjectIdea) => void;
+  setGatherDetails: (details: GatherDetails) => void;
+  setRefineDetails: (details: RefineDetails) => void;
+  setPresentDetails: (details: PresentDetails) => void;
 }
 
 const initialStages: Record<Stage, { status: StageStatus }> = {
@@ -43,6 +59,12 @@ export const useSessionStore = create<SessionState>()(
       currentNodeId: null,
       history: [],
       stageAnswers: { GATHER: {}, REFINE: {}, PRESENT: {} },
+
+      // Enhanced intake fields
+      projectIdea: null,
+      gatherDetails: null,
+      refineDetails: null,
+      presentDetails: null,
 
       setCurrentStage: (stage) =>
         set((state) => ({
@@ -109,6 +131,10 @@ export const useSessionStore = create<SessionState>()(
           currentNodeId: null,
           history: [],
           stageAnswers: { GATHER: {}, REFINE: {}, PRESENT: {} },
+          projectIdea: null,
+          gatherDetails: null,
+          refineDetails: null,
+          presentDetails: null,
         }),
 
       getEffectiveProtectionLevel: () => {
@@ -116,9 +142,29 @@ export const useSessionStore = create<SessionState>()(
         const gatherResult = state.stages.GATHER.result;
         return gatherResult?.protectionLevel ?? 'P1';
       },
+
+      // Enhanced intake actions
+      setProjectIdea: (idea) => set({ projectIdea: idea }),
+      setGatherDetails: (details) => set({ gatherDetails: details }),
+      setRefineDetails: (details) => set({ refineDetails: details }),
+      setPresentDetails: (details) => set({ presentDetails: details }),
     }),
     {
       name: 'ucsd-agentbuilder-session',
+      version: 2,
+      migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as Record<string, unknown>;
+        if (version < 2) {
+          return {
+            ...state,
+            projectIdea: null,
+            gatherDetails: null,
+            refineDetails: null,
+            presentDetails: null,
+          };
+        }
+        return state;
+      },
     },
   ),
 );

@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
+import { useStartOver } from '@/hooks/use-start-over';
 
 export function Header() {
   const navigate = useNavigate();
+  const startOver = useStartOver();
 
   return (
     <header className="border-b border-gray-200 bg-navy text-white">
@@ -23,7 +25,7 @@ export function Header() {
           </div>
         </button>
         <button
-          onClick={() => navigate('/')}
+          onClick={startOver}
           className="text-xs text-gray-400 hover:text-white transition-colors uppercase tracking-widest"
         >
           Start Over

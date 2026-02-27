@@ -1,18 +1,59 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Download, Share2, Copy, Check } from 'lucide-react';
 import { useSessionStore } from '@/store/session-store';
+import { useStartOver } from '@/hooks/use-start-over';
+import { ProjectIdeaSummary } from './ProjectIdeaSummary';
 import { StageSummary } from './StageSummary';
 import { NextSteps } from './NextSteps';
+import {
+  buildIntakeJson,
+  downloadJson,
+  shareSummary,
+  copyToClipboard,
+} from '@/lib/summary-formatter';
 import type { Stage } from '@/types/decision-tree';
 
 const stageOrder: Stage[] = ['GATHER', 'REFINE', 'PRESENT'];
 
 export function SummaryView() {
-  const { stages, resetSession } = useSessionStore();
+  const store = useSessionStore();
+  const { stages, projectIdea, gatherDetails, refineDetails, presentDetails } =
+    store;
+  const startOver = useStartOver();
+  const [copied, setCopied] = useState(false);
 
   const allComplete = stageOrder.every((s) => stages[s].status === 'complete');
-
   const gatherResult = stages.GATHER.result;
   const presentResult = stages.PRESENT.result;
+
+  const summaryState = {
+    sessionId: store.sessionId,
+    projectIdea,
+    gatherResult: stages.GATHER.result,
+    gatherDetails,
+    refineResult: stages.REFINE.result,
+    refineDetails,
+    presentResult: stages.PRESENT.result,
+    presentDetails,
+  };
+
+  const handleDownload = () => {
+    const payload = buildIntakeJson(summaryState);
+    downloadJson(payload);
+  };
+
+  const handleShare = () => {
+    shareSummary(summaryState);
+  };
+
+  const handleCopy = async () => {
+    const success = await copyToClipboard(summaryState);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <motion.div
@@ -27,26 +68,74 @@ export function SummaryView() {
         </h1>
         <p className="text-sm text-gray-500">
           {allComplete
-            ? 'Here is a complete overview of your decisions and recommended next steps.'
+            ? 'Here is a complete overview of your project and recommended next steps.'
             : 'Complete all three stages to see your full summary.'}
         </p>
       </div>
 
       <div className="space-y-4 mb-8">
+        {/* Project Idea */}
+        {projectIdea && <ProjectIdeaSummary idea={projectIdea} />}
+
+        {/* Stage Summaries */}
         {stageOrder.map((stage) => {
           const stageData = stages[stage];
           if (stageData.status !== 'complete' || !stageData.result) return null;
           return (
-            <StageSummary key={stage} stage={stage} result={stageData.result} />
+            <StageSummary
+              key={stage}
+              stage={stage}
+              result={stageData.result}
+              gatherDetails={stage === 'GATHER' ? gatherDetails : undefined}
+              refineDetails={stage === 'REFINE' ? refineDetails : undefined}
+              presentDetails={stage === 'PRESENT' ? presentDetails : undefined}
+            />
           );
         })}
       </div>
 
+      {/* Action Buttons */}
+      {allComplete && (
+        <div className="mb-8 flex flex-wrap gap-3 justify-center">
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-2 rounded-lg bg-navy px-5 py-2.5 text-xs font-medium text-white hover:bg-blue transition-colors uppercase tracking-wider"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download JSON
+          </button>
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-2 rounded-lg border-2 border-gray-200 px-5 py-2.5 text-xs font-medium text-navy hover:border-blue transition-colors uppercase tracking-wider"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            Share via Email
+          </button>
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-2 rounded-lg border-2 border-gray-200 px-5 py-2.5 text-xs font-medium text-navy hover:border-blue transition-colors uppercase tracking-wider"
+          >
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-green" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                Copy to Clipboard
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Next Steps */}
       {gatherResult && (
         <NextSteps
           protectionLevel={gatherResult.protectionLevel}
           outputFormat={presentResult?.outputFormat}
-          onStartOver={resetSession}
+          onStartOver={startOver}
         />
       )}
     </motion.div>

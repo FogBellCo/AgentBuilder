@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { PipelineView } from '@/components/pipeline/PipelineView';
@@ -5,7 +6,15 @@ import { useSessionStore } from '@/store/session-store';
 
 export function Pipeline() {
   const navigate = useNavigate();
-  const { stages } = useSessionStore();
+  const { stages, projectIdea } = useSessionStore();
+
+  useEffect(() => {
+    if (!projectIdea) {
+      navigate('/describe', { replace: true });
+    }
+  }, [projectIdea, navigate]);
+
+  if (!projectIdea) return null;
 
   const allComplete =
     stages.GATHER.status === 'complete' &&
@@ -22,8 +31,11 @@ export function Pipeline() {
       <div className="mx-auto max-w-5xl px-6">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-navy mb-2">Your AI Workflow</h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 mb-1">
             Click on a stage below to begin. Complete each stage to unlock the next.
+          </p>
+          <p className="text-xs text-blue font-medium">
+            Project: {projectIdea.title}
           </p>
         </div>
 
