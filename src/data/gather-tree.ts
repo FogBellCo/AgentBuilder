@@ -5,8 +5,8 @@ export const gatherTree: DecisionNode[] = [
     id: 'gather-start',
     stage: 'GATHER',
     question: 'Where does the data you want to work with live?',
-    description: 'Think about where you currently access or find this information.',
-    inputType: 'single_choice',
+    description: 'Select all that apply — your data might live in more than one place.',
+    inputType: 'multi_choice',
     classifiesProtectionLevel: true,
     options: [
       {

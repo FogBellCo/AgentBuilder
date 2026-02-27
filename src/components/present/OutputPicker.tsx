@@ -15,8 +15,7 @@ export function OutputPicker({ onSelect, onMultiSelect }: OutputPickerProps) {
     Map<OutputFormat, string>
   >(new Map());
 
-  const mainFormats = outputFormats.filter((f) => !f.technicalOnly);
-  const techFormats = outputFormats.filter((f) => f.technicalOnly);
+  const allFormats = outputFormats;
 
   const handleToggle = (format: OutputFormatInfo) => {
     if (!onMultiSelect) {
@@ -70,7 +69,7 @@ export function OutputPicker({ onSelect, onMultiSelect }: OutputPickerProps) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        {mainFormats.map((format, i) => (
+        {allFormats.map((format, i) => (
           <OutputCard
             key={format.format}
             format={format}
@@ -85,32 +84,6 @@ export function OutputPicker({ onSelect, onMultiSelect }: OutputPickerProps) {
           />
         ))}
       </div>
-
-      {techFormats.length > 0 && (
-        <>
-          <div className="mb-4">
-            <p className="text-xs text-gray-400 uppercase tracking-widest font-medium text-center">
-              Technical Options
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-            {techFormats.map((format, i) => (
-              <OutputCard
-                key={format.format}
-                format={format}
-                index={mainFormats.length + i}
-                onSelect={() => handleToggle(format)}
-                isSelected={selected.has(format.format)}
-                isMultiMode={isMultiMode}
-                description={selected.get(format.format) ?? ''}
-                onDescriptionChange={(desc) =>
-                  handleDescriptionChange(format.format, desc)
-                }
-              />
-            ))}
-          </div>
-        </>
-      )}
 
       {isMultiMode && selected.size > 0 && (
         <motion.div

@@ -93,7 +93,7 @@ export interface ProjectIdea {
 }
 
 export interface GatherDetails {
-  dataType: string;
+  dataType: string[];
   sourceSystem: string;
   dataSize: string;
   additionalNotes: string;

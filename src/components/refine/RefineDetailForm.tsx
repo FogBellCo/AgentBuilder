@@ -180,10 +180,15 @@ export function RefineDetailForm({ initialTask, initialDataPrep }: RefineDetailF
         {/* Add Another */}
         <button
           onClick={addRefinement}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-3 text-xs font-medium text-gray-500 hover:border-blue hover:text-blue transition-colors uppercase tracking-wider"
+          className="flex w-full flex-col items-center gap-1 rounded-lg border-2 border-dashed border-gray-300 px-4 py-4 hover:border-blue hover:bg-blue/5 transition-colors group"
         >
-          <Plus className="h-3 w-3" />
-          Add Another Refinement
+          <span className="flex items-center gap-2 text-xs font-medium text-gray-500 group-hover:text-blue uppercase tracking-wider">
+            <Plus className="h-4 w-4" />
+            Add Another Refinement
+          </span>
+          <span className="text-[11px] text-gray-400 group-hover:text-blue/70">
+            Want AI to do more than one thing? Add another task here.
+          </span>
         </button>
 
         {/* Additional Context */}

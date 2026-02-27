@@ -14,14 +14,16 @@ interface ProjectIdeaSummaryProps {
 
 export function ProjectIdeaSummary({ idea }: ProjectIdeaSummaryProps) {
   return (
-    <div className="rounded-lg border-2 border-gray-200 bg-white p-6">
+    <div className="rounded-lg border-2 border-blue/20 bg-blue/5 p-6">
       <div className="flex items-center gap-3 mb-4">
-        <Lightbulb className="h-5 w-5 text-blue" />
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue text-white">
+          <Lightbulb className="h-4 w-4" />
+        </div>
         <div>
           <h3 className="text-sm font-bold text-navy uppercase tracking-wider">
-            Project Idea
+            Your Idea
           </h3>
-          <p className="text-xs text-gray-500">Your project description</p>
+          <p className="text-xs text-gray-500">Here's what you're building</p>
         </div>
       </div>
 

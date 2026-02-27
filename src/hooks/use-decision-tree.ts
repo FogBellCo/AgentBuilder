@@ -1,7 +1,21 @@
 import { useCallback } from 'react';
 import { useSessionStore } from '@/store/session-store';
 import { getStartNode, getNodeById, classifyProtectionLevel, mapOptionIdToOutputFormat } from '@/lib/tree-engine';
-import type { Stage, DecisionNode } from '@/types/decision-tree';
+import type { Stage, DecisionNode, ProtectionLevel } from '@/types/decision-tree';
+
+const protectionLevelRank: Record<string, number> = {
+  P1: 1,
+  P2: 2,
+  P3: 3,
+  P4: 4,
+};
+
+const confirmNodeForLevel: Record<string, string> = {
+  P1: 'gather-confirm-p1',
+  P2: 'gather-confirm-p2',
+  P3: 'gather-confirm-p3',
+  P4: 'gather-p4-stop',
+};
 
 export function useDecisionTree(stage: Stage) {
   const {
@@ -48,6 +62,50 @@ export function useDecisionTree(stage: Stage) {
     [currentNode, stage, stageAnswers, stages, recordAnswer, pushHistory, completeStage, setCurrentNode],
   );
 
+  const selectMultipleOptions = useCallback(
+    (optionIds: string[]) => {
+      if (!currentNode) return;
+
+      // Store as comma-separated IDs
+      const combinedId = optionIds.join(',');
+      recordAnswer(stage, currentNode.id, combinedId);
+      pushHistory(stage, currentNode.id);
+
+      // Handle "I'm not sure" — exclusive, go to help flow
+      if (optionIds.length === 1 && optionIds[0] === 'dont-know') {
+        const option = currentNode.options.find((o) => o.id === 'dont-know');
+        if (option?.nextNodeId) {
+          setCurrentNode(option.nextNodeId);
+        }
+        return;
+      }
+
+      // Find the most restrictive protection level from all selected options
+      let highestLevel: ProtectionLevel = 'P1';
+      let highestRank = 0;
+
+      for (const optId of optionIds) {
+        const option = currentNode.options.find((o) => o.id === optId);
+        if (!option) continue;
+
+        if (option.mapsToProtectionLevel) {
+          const rank = protectionLevelRank[option.mapsToProtectionLevel] ?? 0;
+          if (rank > highestRank) {
+            highestRank = rank;
+            highestLevel = option.mapsToProtectionLevel;
+          }
+        }
+      }
+
+      // Navigate to the confirmation screen for the most restrictive level
+      const confirmNodeId = confirmNodeForLevel[highestLevel];
+      if (confirmNodeId) {
+        setCurrentNode(confirmNodeId);
+      }
+    },
+    [currentNode, stage, recordAnswer, pushHistory, setCurrentNode],
+  );
+
   const goBack = useCallback(() => {
     const prev = popHistory();
     if (prev) {
@@ -58,6 +116,7 @@ export function useDecisionTree(stage: Stage) {
   return {
     currentNode,
     selectOption,
+    selectMultipleOptions,
     goBack,
     canGoBack: useSessionStore.getState().history.length > 0,
   };

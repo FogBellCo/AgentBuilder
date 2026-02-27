@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Share2, Copy, Check } from 'lucide-react';
+import { Download, Share2, Copy, Check, Sparkles } from 'lucide-react';
 import { useSessionStore } from '@/store/session-store';
 import { useStartOver } from '@/hooks/use-start-over';
 import { ProjectIdeaSummary } from './ProjectIdeaSummary';
@@ -62,39 +62,38 @@ export function SummaryView() {
       transition={{ duration: 0.4 }}
       className="mx-auto max-w-2xl py-8"
     >
-      <div className="mb-8 text-center">
+      {/* Header */}
+      <div className="mb-6 text-center">
         <h1 className="text-3xl font-bold text-navy mb-2">
           {allComplete ? 'Your AI Workflow Summary' : 'Progress So Far'}
         </h1>
-        <p className="text-sm text-gray-500">
-          {allComplete
-            ? 'Here is a complete overview of your project and recommended next steps.'
-            : 'Complete all three stages to see your full summary.'}
-        </p>
+        {allComplete ? (
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <Sparkles className="h-4 w-4 text-blue" />
+            <p className="text-sm text-gray-600">
+              Here's your personalized AI workflow plan. We've mapped out the data,
+              defined the tasks, and picked the format — you're ready for next steps.
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">
+            Complete all three stages to see your full summary.
+          </p>
+        )}
       </div>
 
-      <div className="space-y-4 mb-8">
-        {/* Project Idea */}
-        {projectIdea && <ProjectIdeaSummary idea={projectIdea} />}
+      {/* Next Steps — Promoted to top when complete */}
+      {allComplete && gatherResult && (
+        <div className="mb-6">
+          <NextSteps
+            protectionLevel={gatherResult.protectionLevel}
+            outputFormat={presentResult?.outputFormat}
+            onStartOver={startOver}
+          />
+        </div>
+      )}
 
-        {/* Stage Summaries */}
-        {stageOrder.map((stage) => {
-          const stageData = stages[stage];
-          if (stageData.status !== 'complete' || !stageData.result) return null;
-          return (
-            <StageSummary
-              key={stage}
-              stage={stage}
-              result={stageData.result}
-              gatherDetails={stage === 'GATHER' ? gatherDetails : undefined}
-              refineDetails={stage === 'REFINE' ? refineDetails : undefined}
-              presentDetails={stage === 'PRESENT' ? presentDetails : undefined}
-            />
-          );
-        })}
-      </div>
-
-      {/* Action Buttons */}
+      {/* Action Buttons — Right after next steps */}
       {allComplete && (
         <div className="mb-8 flex flex-wrap gap-3 justify-center">
           <button
@@ -130,8 +129,28 @@ export function SummaryView() {
         </div>
       )}
 
-      {/* Next Steps */}
-      {gatherResult && (
+      {/* Project & Stage Details */}
+      <div className="space-y-4 mb-8">
+        {projectIdea && <ProjectIdeaSummary idea={projectIdea} />}
+
+        {stageOrder.map((stage) => {
+          const stageData = stages[stage];
+          if (stageData.status !== 'complete' || !stageData.result) return null;
+          return (
+            <StageSummary
+              key={stage}
+              stage={stage}
+              result={stageData.result}
+              gatherDetails={stage === 'GATHER' ? gatherDetails : undefined}
+              refineDetails={stage === 'REFINE' ? refineDetails : undefined}
+              presentDetails={stage === 'PRESENT' ? presentDetails : undefined}
+            />
+          );
+        })}
+      </div>
+
+      {/* Next Steps fallback for incomplete summary */}
+      {!allComplete && gatherResult && (
         <NextSteps
           protectionLevel={gatherResult.protectionLevel}
           outputFormat={presentResult?.outputFormat}
