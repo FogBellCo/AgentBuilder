@@ -151,7 +151,7 @@ export const useSessionStore = create<SessionState>()(
     }),
     {
       name: 'ucsd-agentbuilder-session',
-      version: 2,
+      version: 3,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
         if (version < 2) {
@@ -162,6 +162,19 @@ export const useSessionStore = create<SessionState>()(
             refineDetails: null,
             presentDetails: null,
           };
+        }
+        if (version < 3) {
+          // Migrate dataType from string to string[]
+          const gatherDetails = state.gatherDetails as Record<string, unknown> | null;
+          if (gatherDetails && typeof gatherDetails.dataType === 'string') {
+            return {
+              ...state,
+              gatherDetails: {
+                ...gatherDetails,
+                dataType: gatherDetails.dataType ? [gatherDetails.dataType as string] : [],
+              },
+            };
+          }
         }
         return state;
       },

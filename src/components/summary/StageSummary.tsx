@@ -1,4 +1,4 @@
-import { CheckCircle2, Shield, AlertTriangle, XCircle } from 'lucide-react';
+import { CheckCircle2, Shield, AlertTriangle, XCircle, Search, Sliders, Monitor } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type {
   Stage,
@@ -25,9 +25,21 @@ const stageLabels: Record<Stage, string> = {
 };
 
 const stageDescriptions: Record<Stage, string> = {
-  GATHER: 'Data source and classification',
-  REFINE: 'AI task and audience',
-  PRESENT: 'Output format',
+  GATHER: 'Where your data lives and how it\'s classified',
+  REFINE: 'What AI will do with your data',
+  PRESENT: 'How you\'ll see the results',
+};
+
+const stageIcons: Record<Stage, typeof Search> = {
+  GATHER: Search,
+  REFINE: Sliders,
+  PRESENT: Monitor,
+};
+
+const stageBorderColors: Record<Stage, string> = {
+  GATHER: 'border-l-blue',
+  REFINE: 'border-l-gold',
+  PRESENT: 'border-l-green',
 };
 
 const taskLabels: Record<string, string> = {
@@ -63,16 +75,24 @@ export function StageSummary({
     ? outputFormats.find((f) => f.format === result.outputFormat)
     : null;
 
+  const StageIcon = stageIcons[stage];
+
   return (
-    <div className="rounded-lg border-2 border-gray-200 bg-white p-6">
+    <div className={cn(
+      'rounded-lg border-2 border-gray-200 border-l-4 bg-white p-6',
+      stageBorderColors[stage],
+    )}>
       <div className="flex items-center gap-3 mb-4">
-        <CheckCircle2 className="h-5 w-5 text-green" />
-        <div>
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sand text-navy">
+          <StageIcon className="h-4 w-4" />
+        </div>
+        <div className="flex-1">
           <h3 className="text-sm font-bold text-navy uppercase tracking-wider">
             {stageLabels[stage]}
           </h3>
           <p className="text-xs text-gray-500">{stageDescriptions[stage]}</p>
         </div>
+        <CheckCircle2 className="h-5 w-5 text-green shrink-0" />
       </div>
 
       <div className="space-y-3">
@@ -92,8 +112,8 @@ export function StageSummary({
         {/* GATHER Details */}
         {stage === 'GATHER' && gatherDetails && (
           <div className="mt-3 space-y-1.5 border-t border-gray-100 pt-3">
-            {gatherDetails.dataType && (
-              <DetailRow label="Data Type" value={gatherDetails.dataType} />
+            {gatherDetails.dataType.length > 0 && (
+              <DetailRow label="Data Type" value={gatherDetails.dataType.join(', ')} />
             )}
             {gatherDetails.sourceSystem && (
               <DetailRow

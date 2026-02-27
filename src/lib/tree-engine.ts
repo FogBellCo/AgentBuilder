@@ -29,21 +29,35 @@ export function getNodeById(stage: Stage, nodeId: string): DecisionNode | undefi
   return treeLookup[stage].find((n) => n.id === nodeId);
 }
 
+const levelRank: Record<string, number> = { P1: 1, P2: 2, P3: 3, P4: 4 };
+
 export function classifyProtectionLevel(
   answers: Record<string, string>,
   stage: Stage,
 ): ProtectionLevel | undefined {
   const tree = treeLookup[stage];
+  let highestLevel: ProtectionLevel | undefined;
+  let highestRank = 0;
+
   for (const node of tree) {
     if (!node.classifiesProtectionLevel) continue;
     const selectedOptionId = answers[node.id];
     if (!selectedOptionId) continue;
-    const option = node.options.find((o) => o.id === selectedOptionId);
-    if (option?.mapsToProtectionLevel) {
-      return option.mapsToProtectionLevel;
+
+    // Support comma-separated multi-select answers
+    const ids = selectedOptionId.split(',');
+    for (const id of ids) {
+      const option = node.options.find((o) => o.id === id);
+      if (option?.mapsToProtectionLevel) {
+        const rank = levelRank[option.mapsToProtectionLevel] ?? 0;
+        if (rank > highestRank) {
+          highestRank = rank;
+          highestLevel = option.mapsToProtectionLevel;
+        }
+      }
     }
   }
-  return undefined;
+  return highestLevel;
 }
 
 export function checkFeasibility(

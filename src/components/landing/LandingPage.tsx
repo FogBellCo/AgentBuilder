@@ -6,22 +6,22 @@ const steps = [
   {
     icon: Lightbulb,
     label: 'Describe',
-    desc: 'Tell us what you want to build or accomplish with AI',
+    desc: 'Tell us about your idea',
   },
   {
     icon: Search,
     label: 'Gather',
-    desc: 'Identify where your data lives and what access level it requires',
+    desc: 'Show us where your data lives',
   },
   {
     icon: Sliders,
     label: 'Refine',
-    desc: 'Define what AI should do with your data and who will see the results',
+    desc: 'Tell us what AI should do with it',
   },
   {
     icon: Monitor,
     label: 'Present',
-    desc: 'Choose how you want to see and share the AI-powered output',
+    desc: 'Pick how you want to see the results',
   },
 ];
 
@@ -37,15 +37,15 @@ export function LandingPage() {
         className="max-w-2xl text-center"
       >
         <h1 className="text-4xl font-bold text-navy leading-tight mb-4">
-          AI Workflow Builder
+          Let's Build Your AI Workflow
         </h1>
         <p className="text-lg text-gray-600 leading-relaxed mb-4">
-          Describe what you want to build with UCSD AI tools, and we'll help you
-          assess the feasibility and complexity of your idea — step by step.
+          Got an idea for using AI at UCSD? Walk through a few quick questions
+          and we'll figure out what's possible, what you'll need, and how to get started.
         </p>
         <p className="text-sm text-gray-500 leading-relaxed mb-12">
-          No technical expertise required. You'll get a summary you can share
-          and a structured intake file for the AI team.
+          No technical background needed — you'll walk away with a clear plan
+          and a summary you can share with your team.
         </p>
       </motion.div>
 
@@ -95,7 +95,7 @@ export function LandingPage() {
         transition={{ duration: 0.6, delay: 0.6 }}
         className="mt-8 text-xs text-gray-400 max-w-md text-center"
       >
-        This is a guidance tool only. It does not access, store, or process your actual data.
+        This tool helps you plan — it doesn't access, store, or process your actual data.
         All recommendations follow UC data classification policy.
       </motion.p>
     </div>

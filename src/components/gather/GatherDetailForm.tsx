@@ -32,14 +32,20 @@ export function GatherDetailForm({ protectionLevel }: GatherDetailFormProps) {
 
   const levelInfo = protectionLevels[protectionLevel];
 
-  const [dataType, setDataType] = useState(gatherDetails?.dataType ?? '');
+  const [dataTypes, setDataTypes] = useState<string[]>(gatherDetails?.dataType ?? []);
   const [sourceSystem, setSourceSystem] = useState(gatherDetails?.sourceSystem ?? '');
   const [dataSize, setDataSize] = useState(gatherDetails?.dataSize ?? '');
   const [additionalNotes, setAdditionalNotes] = useState(gatherDetails?.additionalNotes ?? '');
 
+  const toggleDataType = (opt: string) => {
+    setDataTypes((prev) =>
+      prev.includes(opt) ? prev.filter((t) => t !== opt) : [...prev, opt],
+    );
+  };
+
   const handleSubmit = () => {
     const details: GatherDetails = {
-      dataType,
+      dataType: dataTypes,
       sourceSystem: sourceSystem.trim(),
       dataSize,
       additionalNotes: additionalNotes.trim(),
@@ -74,18 +80,19 @@ export function GatherDetailForm({ protectionLevel }: GatherDetailFormProps) {
       </div>
 
       <div className="space-y-6">
-        {/* Data Type */}
+        {/* Data Type (multi-select) */}
         <div>
-          <label className="block text-xs font-bold text-navy uppercase tracking-wider mb-2">
+          <label className="block text-xs font-bold text-navy uppercase tracking-wider mb-1">
             Data Type
           </label>
+          <p className="text-xs text-gray-400 mb-2">Select all that apply</p>
           <div className="flex flex-wrap gap-2">
             {dataTypeOptions.map((opt) => (
               <button
                 key={opt}
-                onClick={() => setDataType(dataType === opt ? '' : opt)}
+                onClick={() => toggleDataType(opt)}
                 className={`rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors ${
-                  dataType === opt
+                  dataTypes.includes(opt)
                     ? 'border-blue bg-blue/5 text-blue'
                     : 'border-gray-200 text-gray-500 hover:border-gray-300'
                 }`}

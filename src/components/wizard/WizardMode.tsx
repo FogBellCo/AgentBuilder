@@ -14,7 +14,7 @@ const stageLabels: Record<Stage, string> = {
 };
 
 export function WizardMode({ stage }: WizardModeProps) {
-  const { currentNode, selectOption, goBack, canGoBack } = useDecisionTree(stage);
+  const { currentNode, selectOption, selectMultipleOptions, goBack, canGoBack } = useDecisionTree(stage);
 
   if (!currentNode) {
     return (
@@ -43,7 +43,11 @@ export function WizardMode({ stage }: WizardModeProps) {
         </div>
       </div>
 
-      <QuestionCard node={currentNode} onSelectOption={selectOption} />
+      <QuestionCard
+        node={currentNode}
+        onSelectOption={selectOption}
+        onSelectMultiple={selectMultipleOptions}
+      />
     </div>
   );
 }

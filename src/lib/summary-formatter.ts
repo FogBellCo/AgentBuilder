@@ -70,7 +70,7 @@ export function buildIntakeJson(state: SummaryState): IntakePayload {
       protectionLevel,
       protectionLevelLabel: levelInfo.label,
       details: state.gatherDetails ?? {
-        dataType: '',
+        dataType: [],
         sourceSystem: '',
         dataSize: '',
         additionalNotes: '',
@@ -144,8 +144,8 @@ export function formatSummaryAsPlainText(state: SummaryState): string {
   lines.push(
     `Protection Level: ${payload.gather.protectionLevel} (${payload.gather.protectionLevelLabel})`,
   );
-  if (payload.gather.details.dataType) {
-    lines.push(`Data Type: ${payload.gather.details.dataType}`);
+  if (payload.gather.details.dataType.length > 0) {
+    lines.push(`Data Type: ${payload.gather.details.dataType.join(', ')}`);
   }
   if (payload.gather.details.sourceSystem) {
     lines.push(`Source System: ${payload.gather.details.sourceSystem}`);

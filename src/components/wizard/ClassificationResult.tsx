@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Shield, ArrowRight, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { Shield, ArrowRight, ArrowLeft, AlertTriangle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ProtectionLevel } from '@/types/decision-tree';
 import { protectionLevels } from '@/data/protection-levels';
@@ -58,14 +58,26 @@ export function ClassificationResult({
           </span>
         </div>
 
-        <h3 className="text-xl font-bold text-navy mb-2">{info.tagline}</h3>
-        <p className="text-sm text-gray-600 leading-relaxed mb-4">{info.description}</p>
+        <h3 className="text-xl font-bold text-navy mb-3">{info.tagline}</h3>
 
-        <div className="text-left bg-white/60 rounded-lg p-4 mb-6">
-          <p className="text-xs font-bold text-navy uppercase tracking-wider mb-2">
-            Requirement
+        <div
+          className="text-left rounded-lg p-4 mb-4 border-l-4"
+          style={{ borderLeftColor: info.color, backgroundColor: `${info.color}10` }}
+        >
+          <div className="flex items-start gap-2">
+            <Info className="h-4 w-4 shrink-0 mt-0.5" style={{ color: info.color }} />
+            <p className="text-sm text-gray-700 font-medium leading-relaxed">{info.description}</p>
+          </div>
+        </div>
+
+        <div
+          className="text-left rounded-lg p-4 mb-6 border-2"
+          style={{ borderColor: `${info.color}40`, backgroundColor: `${info.color}08` }}
+        >
+          <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: info.color }}>
+            What you'll need
           </p>
-          <p className="text-sm text-gray-700">{info.requirement}</p>
+          <p className="text-sm text-gray-800 font-medium">{info.requirement}</p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
