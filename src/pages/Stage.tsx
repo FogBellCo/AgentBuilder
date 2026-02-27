@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSessionStore } from '@/store/session-store';
 import { WizardMode } from '@/components/wizard/WizardMode';
@@ -31,6 +31,20 @@ export function Stage() {
   const [showGuidance, setShowGuidance] = useState<string | null>(null);
   const [presentStep, setPresentStep] = useState<'pick' | 'feasibility'>('pick');
   const [selectedFormat, setSelectedFormat] = useState<OutputFormat | null>(null);
+
+  const protectionLevel = getEffectiveProtectionLevel();
+
+  const handleSelectFormat = (format: OutputFormatInfo) => {
+    setSelectedFormat(format.format);
+    setPresentStep('feasibility');
+  };
+
+  const handleConfirmPresent = () => {
+    if (selectedFormat) {
+      completeStage('PRESENT', protectionLevel, selectedFormat);
+      navigate('/summary');
+    }
+  };
 
   // Initialize stage if needed
   if (!stages[stage] || stages[stage].status === 'not_started') {
@@ -78,23 +92,6 @@ export function Stage() {
 
   // PRESENT stage: special flow with output picker + feasibility
   if (stage === 'PRESENT') {
-    const protectionLevel = getEffectiveProtectionLevel();
-
-    const handleSelectFormat = useCallback(
-      (format: OutputFormatInfo) => {
-        setSelectedFormat(format.format);
-        setPresentStep('feasibility');
-      },
-      [],
-    );
-
-    const handleConfirmPresent = useCallback(() => {
-      if (selectedFormat) {
-        completeStage('PRESENT', protectionLevel, selectedFormat);
-        navigate('/summary');
-      }
-    }, [selectedFormat, protectionLevel, completeStage, navigate]);
-
     if (presentStep === 'feasibility' && selectedFormat) {
       return (
         <div className="mx-auto max-w-5xl px-6 py-8">

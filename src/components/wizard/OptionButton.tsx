@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import type { LucideIcon } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import type { DecisionOption } from '@/types/decision-tree';
 
@@ -9,9 +10,8 @@ interface OptionButtonProps {
 }
 
 export function OptionButton({ option, index, onSelect }: OptionButtonProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Icon = option.icon
-    ? (LucideIcons as any)[option.icon] as React.ComponentType<{ className?: string }> | undefined
+    ? (LucideIcons[option.icon as keyof typeof LucideIcons] as LucideIcon | undefined)
     : null;
 
   return (
