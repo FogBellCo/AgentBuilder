@@ -4,9 +4,9 @@ import type { Stage } from '@/types/decision-tree';
 
 const stageOrder: Stage[] = ['GATHER', 'REFINE', 'PRESENT'];
 const stageLabels: Record<Stage, string> = {
-  GATHER: 'Gather',
-  REFINE: 'Refine',
-  PRESENT: 'Present',
+  GATHER: 'Your Data',
+  REFINE: 'Your Task',
+  PRESENT: 'Your Output',
 };
 
 export function ProgressBar() {

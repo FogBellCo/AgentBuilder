@@ -17,10 +17,18 @@ const dataTypeOptions = [
 ];
 
 const dataSizeOptions = [
-  { value: 'small', label: 'Small (under 1,000 rows)' },
-  { value: 'medium', label: 'Medium (1,000 – 100,000 rows)' },
-  { value: 'large', label: 'Large (100,000+ rows)' },
-  { value: 'unknown', label: "Not sure" },
+  { value: 'small', label: 'Small', description: 'A handful of files or a small spreadsheet' },
+  { value: 'medium', label: 'Medium', description: 'Dozens of files or a department-sized dataset' },
+  { value: 'large', label: 'Large', description: 'Thousands of files, a full database, or campus-wide data' },
+  { value: 'unknown', label: 'Not sure' },
+];
+
+const regulatoryOptions = [
+  { value: 'ferpa', label: 'Student records (FERPA)' },
+  { value: 'hipaa', label: 'Health or medical data (HIPAA)' },
+  { value: 'export-control', label: 'Export-controlled research' },
+  { value: 'financial-compliance', label: 'Financial audit requirements' },
+  { value: 'none', label: 'None of these / Not sure' },
 ];
 
 interface GatherDetailFormProps {
@@ -58,11 +66,29 @@ export function GatherDetailForm({ protectionLevel }: GatherDetailFormProps) {
   const [sourceSystem, setSourceSystem] = useState(gatherDetails?.sourceSystem ?? '');
   const [dataSize, setDataSize] = useState(gatherDetails?.dataSize ?? '');
   const [additionalNotes, setAdditionalNotes] = useState(gatherDetails?.additionalNotes ?? '');
+  const [regulatoryContext, setRegulatoryContext] = useState<string[]>(gatherDetails?.regulatoryContext ?? []);
 
   const toggleDataType = (opt: string) => {
     setDataTypes((prev) =>
       prev.includes(opt) ? prev.filter((t) => t !== opt) : [...prev, opt],
     );
+  };
+
+  const toggleRegulatory = (value: string) => {
+    if (value === 'none') {
+      // If "None" is selected, deselect all others
+      setRegulatoryContext((prev) =>
+        prev.includes('none') ? [] : ['none'],
+      );
+    } else {
+      // If any other option is selected, deselect "None"
+      setRegulatoryContext((prev) => {
+        const withoutNone = prev.filter((v) => v !== 'none');
+        return withoutNone.includes(value)
+          ? withoutNone.filter((v) => v !== value)
+          : [...withoutNone, value];
+      });
+    }
   };
 
   const handleSubmit = () => {
@@ -71,6 +97,7 @@ export function GatherDetailForm({ protectionLevel }: GatherDetailFormProps) {
       sourceSystem: sourceSystem.trim(),
       dataSize,
       additionalNotes: additionalNotes.trim(),
+      regulatoryContext,
     };
     setGatherDetails(details);
     navigate('/pipeline');
@@ -172,14 +199,14 @@ export function GatherDetailForm({ protectionLevel }: GatherDetailFormProps) {
             htmlFor="source-system"
             className="block text-xs font-bold text-navy uppercase tracking-wider mb-2"
           >
-            Source System <span className="text-gray-400 font-normal">(optional)</span>
+            Source System(s) <span className="text-gray-400 font-normal">(optional)</span>
           </label>
           <input
             id="source-system"
             type="text"
             value={sourceSystem}
             onChange={(e) => setSourceSystem(e.target.value)}
-            placeholder="e.g., TritonLink, ServiceNow, Canvas, Banner"
+            placeholder="List all systems involved, e.g., Oracle, Concur, ServiceNow, Canvas"
             className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder-gray-400 focus:border-blue focus:outline-none transition-colors"
           />
         </div>
@@ -194,8 +221,34 @@ export function GatherDetailForm({ protectionLevel }: GatherDetailFormProps) {
               <button
                 key={opt.value}
                 onClick={() => setDataSize(dataSize === opt.value ? '' : opt.value)}
-                className={`rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors ${
+                className={`rounded-lg border-2 px-4 py-2 text-left transition-colors ${
                   dataSize === opt.value
+                    ? 'border-blue bg-blue/5 text-blue'
+                    : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                }`}
+              >
+                <span className="text-xs font-medium">{opt.label}</span>
+                {opt.description && (
+                  <span className="block text-[11px] font-normal opacity-70">{opt.description}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Regulatory Context */}
+        <div>
+          <label className="block text-xs font-bold text-navy uppercase tracking-wider mb-1">
+            Does any of the following apply to your data?
+          </label>
+          <p className="text-xs text-gray-400 mb-2">Select all that apply, or skip if you're not sure.</p>
+          <div className="flex flex-wrap gap-2">
+            {regulatoryOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => toggleRegulatory(opt.value)}
+                className={`rounded-lg border-2 px-4 py-2 text-xs font-medium transition-colors ${
+                  regulatoryContext.includes(opt.value)
                     ? 'border-blue bg-blue/5 text-blue'
                     : 'border-gray-200 text-gray-500 hover:border-gray-300'
                 }`}

@@ -151,7 +151,7 @@ export const useSessionStore = create<SessionState>()(
     }),
     {
       name: 'ucsd-agentbuilder-session',
-      version: 3,
+      version: 4,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
         if (version < 2) {
@@ -175,6 +175,30 @@ export const useSessionStore = create<SessionState>()(
               },
             };
           }
+        }
+        if (version < 4) {
+          // Add new ProjectIdea fields and GatherDetails.regulatoryContext
+          const projectIdea = state.projectIdea as Record<string, unknown> | null;
+          const gatherDetails = state.gatherDetails as Record<string, unknown> | null;
+          return {
+            ...state,
+            projectIdea: projectIdea
+              ? {
+                  ...projectIdea,
+                  existingStatus: projectIdea.existingStatus ?? '',
+                  projectGoal: projectIdea.projectGoal ?? '',
+                  currentProcess: projectIdea.currentProcess ?? '',
+                  projectComplexity: projectIdea.projectComplexity ?? '',
+                  preferredTool: projectIdea.preferredTool ?? '',
+                }
+              : null,
+            gatherDetails: gatherDetails
+              ? {
+                  ...gatherDetails,
+                  regulatoryContext: gatherDetails.regulatoryContext ?? [],
+                }
+              : null,
+          };
         }
         return state;
       },

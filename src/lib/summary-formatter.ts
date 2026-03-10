@@ -88,6 +88,11 @@ export function buildIntakeJson(state: SummaryState): IntakePayload {
       description: '',
       domain: '',
       timeline: '',
+      existingStatus: '',
+      projectGoal: '',
+      currentProcess: '',
+      projectComplexity: '',
+      preferredTool: '',
     },
     gather: {
       protectionLevel,
@@ -98,6 +103,7 @@ export function buildIntakeJson(state: SummaryState): IntakePayload {
         sourceSystem: '',
         dataSize: '',
         additionalNotes: '',
+        regulatoryContext: [],
       },
     },
     refine: {
@@ -129,7 +135,7 @@ function buildNextSteps(protectionLevel: ProtectionLevel): string[] {
     steps.push('Contact your data steward to obtain API key credentials.');
     steps.push('Set up VPN access if required by your data source.');
     steps.push(
-      'Ensure audit logging is enabled for your AI processing pipeline.',
+      'Ensure audit logging is enabled for your AI tool.',
     );
   } else {
     steps.push(
@@ -145,7 +151,7 @@ export function formatSummaryAsPlainText(state: SummaryState): string {
   const payload = buildIntakeJson(state);
   const lines: string[] = [];
 
-  lines.push('UCSD AI Workflow Summary');
+  lines.push('UCSD AI Tool Request Summary');
   lines.push('========================');
   lines.push('');
 
@@ -159,6 +165,21 @@ export function formatSummaryAsPlainText(state: SummaryState): string {
     }
     if (payload.projectIdea.timeline) {
       lines.push(`Timeline: ${payload.projectIdea.timeline}`);
+    }
+    if (payload.projectIdea.projectGoal) {
+      lines.push(`Goal: ${payload.projectIdea.projectGoal}`);
+    }
+    if (payload.projectIdea.existingStatus) {
+      lines.push(`Current Status: ${payload.projectIdea.existingStatus}`);
+    }
+    if (payload.projectIdea.currentProcess) {
+      lines.push(`How It's Done Today: ${payload.projectIdea.currentProcess}`);
+    }
+    if (payload.projectIdea.projectComplexity) {
+      lines.push(`Complexity: ${payload.projectIdea.projectComplexity}`);
+    }
+    if (payload.projectIdea.preferredTool) {
+      lines.push(`Preferred Tool: ${payload.projectIdea.preferredTool}`);
     }
     lines.push('');
   }
@@ -181,6 +202,13 @@ export function formatSummaryAsPlainText(state: SummaryState): string {
   }
   if (payload.gather.details.dataSize) {
     lines.push(`Data Size: ${payload.gather.details.dataSize}`);
+  }
+  if (
+    payload.gather.details.regulatoryContext &&
+    payload.gather.details.regulatoryContext.length > 0 &&
+    !(payload.gather.details.regulatoryContext.length === 1 && payload.gather.details.regulatoryContext[0] === 'none')
+  ) {
+    lines.push(`Regulatory Context: ${payload.gather.details.regulatoryContext.join(', ')}`);
   }
   lines.push('');
 
@@ -243,7 +271,7 @@ export function downloadJson(payload: IntakePayload): void {
 export function buildMailtoLink(state: SummaryState): string {
   const payload = buildIntakeJson(state);
   const subject = encodeURIComponent(
-    `UCSD AI Workflow Summary: ${payload.projectIdea.title || 'Untitled'}`,
+    `UCSD AI Tool Request: ${payload.projectIdea.title || 'Untitled'}`,
   );
   const body = encodeURIComponent(formatSummaryAsPlainText(state));
   return `mailto:?subject=${subject}&body=${body}`;
@@ -256,7 +284,7 @@ export async function shareSummary(state: SummaryState): Promise<boolean> {
   if (navigator.share) {
     try {
       await navigator.share({
-        title: `UCSD AI Workflow Summary: ${payload.projectIdea.title || 'Untitled'}`,
+        title: `UCSD AI Tool Request: ${payload.projectIdea.title || 'Untitled'}`,
         text,
       });
       return true;

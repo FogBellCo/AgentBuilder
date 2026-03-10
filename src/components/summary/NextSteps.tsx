@@ -23,7 +23,7 @@ export function NextSteps({ protectionLevel, outputFormat, onStartOver }: NextSt
   } else if (protectionLevel === 'P3') {
     steps.push('Contact your data steward to obtain API key credentials.');
     steps.push('Set up VPN access if required by your data source.');
-    steps.push('Ensure audit logging is enabled for your AI processing pipeline.');
+    steps.push('Ensure audit logging is enabled for your AI tool.');
   } else {
     steps.push('This data cannot be processed by AI tools under current UC policy.');
     steps.push('Consider working with a de-identified subset of the data.');

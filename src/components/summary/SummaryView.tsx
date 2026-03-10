@@ -73,7 +73,7 @@ export function SummaryView() {
       {/* Header */}
       <div className="mb-6 text-center">
         <h1 className="text-3xl font-bold text-navy mb-2">
-          {allComplete ? 'Your AI Workflow Summary' : 'Progress So Far'}
+          {allComplete ? 'Your AI Tool Request' : 'Progress So Far'}
         </h1>
         {!allComplete && (
           <p className="text-sm text-gray-500">
@@ -94,7 +94,7 @@ export function SummaryView() {
               <p className="text-sm text-gray-700 leading-relaxed">
                 A member of the TritonAI team will reach out to you with next steps
                 based on your responses. You'll receive a detailed email with
-                recommendations tailored to your workflow.
+                recommendations tailored to your project.
               </p>
             </div>
           </div>

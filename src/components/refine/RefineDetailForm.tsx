@@ -12,6 +12,9 @@ const taskTypeOptions = [
   { value: 'compare', label: 'Compare data sets' },
   { value: 'recommend', label: 'Generate recommendations' },
   { value: 'classify', label: 'Classify or categorize' },
+  { value: 'answer', label: 'Answer questions from documents' },
+  { value: 'generate', label: 'Draft or create content' },
+  { value: 'extract', label: 'Pull data from files' },
 ];
 
 const dataPrepOptions = [

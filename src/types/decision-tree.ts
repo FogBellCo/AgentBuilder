@@ -13,7 +13,10 @@ export type OutputFormat =
   | 'slide_deck'
   | 'api_feed'
   | 'smart_alerts'
-  | 'knowledge_base';
+  | 'knowledge_base'
+  | 'workflow_automation'
+  | 'system_integration'
+  | 'embedded_widget';
 
 export type Feasibility = 'allowed' | 'allowed_with_conditions' | 'not_allowed';
 
@@ -90,6 +93,11 @@ export interface ProjectIdea {
   description: string;
   domain: string;
   timeline: string;
+  existingStatus: string;
+  projectGoal: string;
+  currentProcess: string;
+  projectComplexity: string;
+  preferredTool: string;
 }
 
 export interface GatherDetails {
@@ -97,6 +105,7 @@ export interface GatherDetails {
   sourceSystem: string;
   dataSize: string;
   additionalNotes: string;
+  regulatoryContext: string[];
 }
 
 export interface Refinement {

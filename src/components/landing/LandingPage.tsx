@@ -10,18 +10,18 @@ const steps = [
   },
   {
     icon: Search,
-    label: 'Gather',
-    desc: 'Show us where your data lives',
+    label: 'Your Data',
+    desc: 'Tell us where your data lives',
   },
   {
     icon: Sliders,
-    label: 'Refine',
-    desc: 'Tell us what AI should do with it',
+    label: 'Your Task',
+    desc: 'Tell us what AI should do',
   },
   {
     icon: Monitor,
-    label: 'Present',
-    desc: 'Pick how you want to see the results',
+    label: 'Your Output',
+    desc: 'Pick how you want the results',
   },
 ];
 
@@ -37,15 +37,14 @@ export function LandingPage() {
         className="max-w-2xl text-center"
       >
         <h1 className="text-4xl font-bold text-navy leading-tight mb-4">
-          Let's Build Your AI Workflow
+          Request an AI Tool
         </h1>
         <p className="text-lg text-gray-600 leading-relaxed mb-4">
-          Got an idea for using AI at UCSD? Walk through a few quick questions
-          and we'll figure out what's possible, what you'll need, and how to get started.
+          Got an idea for using AI at UCSD? Answer a few quick questions
+          and we'll figure out what's possible and what you'll need.
         </p>
         <p className="text-sm text-gray-500 leading-relaxed mb-12">
-          No technical background needed — you'll walk away with a clear plan
-          and a summary you can share with your team.
+          No technical background needed — the TritonAI team will follow up with next steps.
         </p>
       </motion.div>
 
@@ -95,8 +94,7 @@ export function LandingPage() {
         transition={{ duration: 0.6, delay: 0.6 }}
         className="mt-8 text-xs text-gray-400 max-w-md text-center"
       >
-        This tool helps you plan — it doesn't access, store, or process your actual data.
-        All recommendations follow UC data classification policy.
+        This tool helps us understand your needs — it doesn't access, store, or process your actual data.
       </motion.p>
     </div>
   );

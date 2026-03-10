@@ -55,4 +55,22 @@ export const feasibilityMatrix: Record<OutputFormat, Record<ProtectionLevel, Fea
     P3: { feasibility: 'allowed_with_conditions', conditions: 'Requires access controls and audit logging' },
     P4: { feasibility: 'not_allowed', alternativeSuggestion: 'static_report' },
   },
+  workflow_automation: {
+    P1: { feasibility: 'allowed' },
+    P2: { feasibility: 'allowed_with_conditions', conditions: 'Must run within UCSD-approved systems with SSO' },
+    P3: { feasibility: 'allowed_with_conditions', conditions: 'Requires API key auth, audit logging, and data steward approval' },
+    P4: { feasibility: 'not_allowed' },
+  },
+  system_integration: {
+    P1: { feasibility: 'allowed' },
+    P2: { feasibility: 'allowed_with_conditions', conditions: 'Both systems must be behind UCSD SSO' },
+    P3: { feasibility: 'allowed_with_conditions', conditions: 'Requires encrypted transport and API key validation' },
+    P4: { feasibility: 'not_allowed' },
+  },
+  embedded_widget: {
+    P1: { feasibility: 'allowed' },
+    P2: { feasibility: 'allowed_with_conditions', conditions: 'Widget must require UCSD SSO login' },
+    P3: { feasibility: 'allowed_with_conditions', conditions: 'Must use UCSD-approved platform with API key' },
+    P4: { feasibility: 'not_allowed', alternativeSuggestion: 'static_report' },
+  },
 };

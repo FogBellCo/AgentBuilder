@@ -52,8 +52,26 @@ export const outputFormats: OutputFormatInfo[] = [
   {
     format: 'api_feed',
     label: 'Data Feed / API',
-    description: 'Connect AI output to other systems automatically. For system integration and automation pipelines.',
+    description: 'Connect AI output to other systems automatically. For system integration and automated processes.',
     icon: 'Plug',
     technicalOnly: true,
+  },
+  {
+    format: 'workflow_automation',
+    label: 'Automated Actions',
+    description: 'AI handles routine tasks in your existing systems \u2014 like approvals, routing, or data entry',
+    icon: 'Zap',
+  },
+  {
+    format: 'system_integration',
+    label: 'System Connector',
+    description: 'AI results get sent directly into another system \u2014 no manual copy-paste needed',
+    icon: 'ArrowRightLeft',
+  },
+  {
+    format: 'embedded_widget',
+    label: 'Embedded Assistant',
+    description: 'An AI helper built into a website or tool your team already uses',
+    icon: 'PanelRight',
   },
 ];

@@ -42,6 +42,14 @@ export const gatherTree: DecisionNode[] = [
         nextNodeId: 'gather-p4-stop',
       },
       {
+        id: 'user-provided',
+        label: 'People will type or upload it directly',
+        description: 'Users paste text, upload files, or enter information on the spot',
+        icon: 'Upload',
+        mapsToProtectionLevel: 'P1',
+        nextNodeId: 'gather-confirm-p1',
+      },
+      {
         id: 'dont-know',
         label: "I'm not sure",
         description: "That's okay — we'll help you figure it out",
@@ -174,6 +182,13 @@ export const gatherTree: DecisionNode[] = [
         description: 'Maybe I can use a non-restricted subset',
         icon: 'ArrowLeft',
         nextNodeId: 'gather-start',
+      },
+      {
+        id: 'p4-deidentify',
+        label: 'I can remove the sensitive parts first',
+        description: 'I plan to de-identify or use only non-restricted portions of this data',
+        icon: 'EyeOff',
+        nextNodeId: 'gather-confirm-p3',
       },
     ],
   },

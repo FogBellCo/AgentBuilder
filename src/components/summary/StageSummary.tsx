@@ -34,15 +34,15 @@ interface StageSummaryProps {
 }
 
 const stageLabels: Record<Stage, string> = {
-  GATHER: 'Gather',
-  REFINE: 'Refine',
-  PRESENT: 'Present',
+  GATHER: 'Your Data',
+  REFINE: 'Your Task',
+  PRESENT: 'Your Output',
 };
 
 const stageDescriptions: Record<Stage, string> = {
-  GATHER: 'Where your data lives and how it\'s classified',
-  REFINE: 'What AI will do with your data',
-  PRESENT: 'How you\'ll see the results',
+  GATHER: 'Where your data lives and how sensitive it is',
+  REFINE: 'What you want AI to do',
+  PRESENT: 'How you\'ll get the results',
 };
 
 const stageIcons: Record<Stage, typeof Search> = {
@@ -175,6 +175,14 @@ export function StageSummary({
             )}
             {gatherDetails?.additionalNotes && (
               <DetailRow label="Notes" value={gatherDetails.additionalNotes} />
+            )}
+            {gatherDetails?.regulatoryContext &&
+              gatherDetails.regulatoryContext.length > 0 &&
+              !(gatherDetails.regulatoryContext.length === 1 && gatherDetails.regulatoryContext[0] === 'none') && (
+              <DetailRow
+                label="Regulatory Context"
+                value={gatherDetails.regulatoryContext.join(', ')}
+              />
             )}
           </div>
         )}
