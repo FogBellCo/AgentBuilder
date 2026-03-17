@@ -10,8 +10,12 @@ import { Pipeline } from '@/pages/Pipeline';
 import { Stage } from '@/pages/Stage';
 import { Guidance } from '@/pages/Guidance';
 import { Summary } from '@/pages/Summary';
+import { GapAnalysis } from '@/pages/GapAnalysis';
+import { useAutoSave } from '@/hooks/use-auto-save';
 
 function App() {
+  useAutoSave();
+
   return (
     <HashRouter>
       <div className="flex min-h-screen flex-col">
@@ -27,6 +31,7 @@ function App() {
               <Route path="/pipeline" element={<Pipeline />} />
               <Route path="/stage/:stageId" element={<Stage />} />
               <Route path="/guidance/:guidanceId" element={<Guidance />} />
+              <Route path="/gap-analysis" element={<GapAnalysis />} />
               <Route path="/summary" element={<Summary />} />
             </Routes>
           </main>

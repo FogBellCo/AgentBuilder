@@ -1,0 +1,151 @@
+/**
+ * Print styles for the AI Summary view.
+ *
+ * Hides interactive chrome and ensures all summary sections
+ * are fully expanded with clean typography and page breaks.
+ */
+
+@media print {
+  /* ── Hide interactive elements ── */
+  header,
+  nav,
+  footer,
+  [data-sidebar],
+  [data-breadcrumbs],
+  [data-progress-bar] {
+    display: none !important;
+  }
+
+  /* Back button */
+  button[aria-label="Back"],
+  a[aria-label="Back"] {
+    display: none !important;
+  }
+
+  /* Export bar */
+  [data-export-bar] {
+    display: none !important;
+  }
+
+  /* Tab toggle (AI Summary / My Answers) */
+  [data-tab-toggle] {
+    display: none !important;
+  }
+
+  /* Unanswered questions panel */
+  [data-unanswered-panel] {
+    display: none !important;
+  }
+
+  /* Edit pencil icons and edit buttons */
+  button:has(.lucide-pencil),
+  [data-edit-button] {
+    display: none !important;
+  }
+
+  /* Reclassification banner */
+  [data-reclassification-banner] {
+    display: none !important;
+  }
+
+  /* Manual edit conflict modal */
+  [data-conflict-modal] {
+    display: none !important;
+  }
+
+  /* ── Layout reset ── */
+  body {
+    margin: 0;
+    padding: 0;
+    background: white !important;
+    color: #182B49 !important;
+    font-family: "Roboto", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  main {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Remove sidebar flex layout in print */
+  .flex.min-h-screen {
+    display: block !important;
+  }
+
+  .flex-1 {
+    width: 100% !important;
+  }
+
+  /* ── Summary sections ── */
+  /* Ensure all sections are visible (no collapsed state) */
+  [data-summary-section] {
+    display: block !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1rem;
+    border: 1px solid #DEE2E6 !important;
+    border-radius: 4px;
+    padding: 1rem;
+  }
+
+  /* Section titles */
+  [data-summary-section] h3 {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #182B49;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Section content */
+  [data-summary-section] .text-sm {
+    font-size: 10pt;
+    color: #495057;
+  }
+
+  /* ── Page break hints ── */
+  h1 {
+    page-break-after: avoid;
+  }
+
+  /* Force page break before major grouped sections */
+  [data-summary-section]:nth-child(4) {
+    page-break-before: always;
+  }
+
+  /* ── Links ── */
+  a {
+    color: #00629B !important;
+    text-decoration: underline;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #868E96;
+  }
+
+  /* ── Remove shadows and decorative borders ── */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* ── Badges and status indicators ── */
+  .rounded-full {
+    border: 1px solid currentColor;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Preserve protection level badge colors */
+  [style*="background-color"] {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

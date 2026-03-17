@@ -1,6 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Lightbulb, Search, Sliders, Monitor } from 'lucide-react';
+import { useSessionStore } from '@/store/session-store';
+import { useUserEmail } from '@/hooks/use-user-email';
+import { EmailPrompt } from '@/components/landing/EmailPrompt';
+import { SubmissionsList } from '@/components/landing/SubmissionsList';
 
 const steps = [
   {
@@ -27,6 +31,12 @@ const steps = [
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const { isIdentified } = useUserEmail();
+
+  const handleGetStarted = () => {
+    useSessionStore.getState().resetSession();
+    navigate('/describe');
+  };
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-16">
@@ -81,7 +91,7 @@ export function LandingPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
-        onClick={() => navigate('/describe')}
+        onClick={handleGetStarted}
         className="group flex items-center gap-3 rounded-lg bg-blue px-8 py-4 text-white font-medium tracking-wide uppercase text-sm hover:bg-navy transition-colors"
       >
         Get Started
@@ -96,6 +106,11 @@ export function LandingPage() {
       >
         This tool helps us understand your needs — it doesn't access, store, or process your actual data.
       </motion.p>
+
+      <div className="mt-16 w-full max-w-2xl">
+        <EmailPrompt />
+        {isIdentified && <SubmissionsList />}
+      </div>
     </div>
   );
 }

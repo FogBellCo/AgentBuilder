@@ -83,7 +83,7 @@ export function Pipeline() {
         {allComplete && (
           <div className="mt-8 text-center">
             <button
-              onClick={() => navigate('/summary')}
+              onClick={() => navigate('/gap-analysis')}
               className="rounded-lg bg-blue px-8 py-3 text-sm font-medium text-white hover:bg-navy transition-colors uppercase tracking-wider"
             >
               View Complete Summary

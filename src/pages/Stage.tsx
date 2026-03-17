@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSessionStore } from '@/store/session-store';
 import { WizardMode } from '@/components/wizard/WizardMode';
@@ -63,7 +63,7 @@ export function Stage() {
   const handleConfirmPresent = () => {
     if (selectedFormat) {
       completeStage('PRESENT', protectionLevel, selectedFormat);
-      navigate('/summary');
+      navigate('/gap-analysis');
     }
   };
 
@@ -87,13 +87,24 @@ export function Stage() {
 
     // Complete stage with the first format as the primary
     completeStage('PRESENT', protectionLevel, selectedOutputs[0].format);
-    navigate('/summary');
+    navigate('/gap-analysis');
   };
 
   // Initialize stage if needed
   if (!stages[stage] || stages[stage].status === 'not_started') {
     setCurrentStage(stage);
   }
+
+  // If all stages are complete and details filled, redirect to gap-analysis
+  const allComplete = stages.GATHER.status === 'complete'
+    && stages.REFINE.status === 'complete'
+    && stages.PRESENT.status === 'complete';
+
+  useEffect(() => {
+    if (allComplete && gatherDetails && refineDetails) {
+      navigate('/gap-analysis', { replace: true });
+    }
+  }, [allComplete, gatherDetails, refineDetails, navigate]);
 
   // If stage is already complete, check if detail forms are needed
   if (stages[stage].status === 'complete' && stages[stage].result) {

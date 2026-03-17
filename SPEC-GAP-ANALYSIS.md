@@ -144,7 +144,128 @@ The LLM generates content for each section. The section structure is fixed; only
 | 8 | **Compliance & Next Steps** | Protection-level-specific action items, data steward contacts, required approvals |
 | 9 | **Technical Notes** | Collapsible raw JSON payload for dev handoff |
 
-### 4.3 Inline Editing
+### 4.3 Tab Toggle: AI Summary vs. My Answers
+
+The summary page has two tabs at the top, below the header and unanswered questions panel:
+
+```
+┌─────────────────────────────────────────────────┐
+│                                                  │
+│  [ AI Summary ]    [ My Answers ]                │
+│  ─────────────                                   │
+│                                                  │
+│  (active tab content renders below)              │
+│                                                  │
+└─────────────────────────────────────────────────┘
+```
+
+**AI Summary tab** (default): The LLM-generated 9-section summary with inline editing (see §4.4).
+
+**My Answers tab**: A read-only structured view of everything the user actually entered, organized as cards per stage. This gives the user (and the TritonAI reviewer) full transparency into the raw inputs that fed the AI summary.
+
+#### My Answers — Card Layout
+
+One card per section, each showing the decision tree path taken and detail form values:
+
+```
+┌─────────────────────────────────────────────────┐
+│  Project Idea                                    │
+│  ─────────────                                   │
+│  Title:          AI Agent for Transaction...     │
+│  Description:    Campus users have a painpoint...│
+│  Domain:         Business & Financial Services   │
+│  Timeline:       6-12 months                     │
+│  Goal:           Consolidate approval workflows  │
+│  Current Status: No — new project                │
+│  How It's Done:  Users log into each system...   │
+│  Complexity:     High                            │
+│  Preferred Tool: TritonGPT                       │
+└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│  GATHER — Data Classification                    │
+│  ─────────────────────────────                   │
+│  Decision Path:                                  │
+│    Where does your data live?                    │
+│    → UCSD internal system                        │
+│    Your data is Internal (P2)                    │
+│    → That sounds right — continue                │
+│                                                  │
+│  Protection Level:  P2 (Internal)                │
+│  Data Type:         Transactional records, ...   │
+│  Source System:     Oracle, Concur, Kuali, ...   │
+│  Data Size:         10,000+ records              │
+│  Regulatory:        None                         │
+│  Additional Notes:  —                            │
+└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│  REFINE — AI Processing Plan                     │
+│  ───────────────────────────                     │
+│  Decision Path:                                  │
+│    What do you want AI to do?                    │
+│    → Summarize or extract key points             │
+│    How should data be prepared?                  │
+│    → Combine multiple data sources               │
+│    Who will see the output?                      │
+│    → My team or department                       │
+│                                                  │
+│  Refinements:                                    │
+│    1. Extract — Pull pending approval data...    │
+│    2. Summarize — Present consolidated view...   │
+│  Additional Context: —                           │
+└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│  PRESENT — Output Deliverables                   │
+│  ─────────────────────────────                   │
+│  Decision Path:                                  │
+│    How do you want to see results?               │
+│    → AI Chat Assistant                           │
+│                                                  │
+│  Selected Outputs:                               │
+│    1. Chat — Conversational interface...         │
+│       Feasibility: Allowed                       │
+└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│  Gap Analysis Answers                            │
+│  ────────────────────                            │
+│  (Only shown if the user answered any gap Qs)    │
+│                                                  │
+│  Q: Which data fields are subject to FERPA?      │
+│  A: Student enrollment records and GPA data      │
+│                                                  │
+│  Q: What volume of records will be processed?    │
+│  A: 1,000 – 100,000 records                     │
+└─────────────────────────────────────────────────┘
+```
+
+Each card uses the same UCSD brand styling (navy headers, rounded borders, consistent spacing). The decision path section reconstructs the user's journey through the decision tree by mapping their `stageAnswers` back to the tree node questions and selected option labels.
+
+#### My Answers — Component
+
+New component: `src/components/summary/MyAnswersView.tsx`
+
+Props:
+```typescript
+interface MyAnswersViewProps {
+  projectIdea: ProjectIdea | null;
+  stages: Record<Stage, { status: StageStatus; result?: StageResult }>;
+  gatherDetails: GatherDetails | null;
+  refineDetails: RefineDetails | null;
+  presentDetails: PresentDetails | null;
+  gapQuestions: GapQuestion[]; // only answered ones
+}
+```
+
+This component is **read-only** — no editing. If the user wants to change something, they go back through the pipeline stages or answer gap analysis questions.
+
+#### Export Includes Both Views
+
+When exporting (JSON, Markdown, or submitting to TritonAI), the payload includes **both**:
+- The AI-generated summary sections (with any manual edits)
+- The raw structured answers (full `IntakePayload` + gap analysis Q&A)
+
+This ensures the TritonAI team can see the polished summary *and* verify against the original inputs.
+
+### 4.4 Inline Editing (AI Summary Tab)
 
 - Every section (except Header, Feasibility table, and Technical Notes) is **editable**.
 - Clicking a section enters edit mode: the rendered HTML is replaced with a `<textarea>` containing the plain-text/markdown content.
@@ -621,7 +742,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function runGapAnalysis(intakePayload: IntakePayload, previousAnswers?: GapQuestion[]) {
   const completion = await openai.chat.completions.parse({
-    model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+    model: process.env.OPENAI_MODEL ?? 'gpt-5.2',
     messages: [
       { role: 'system', content: buildGapAnalysisSystemPrompt(intakePayload) },
       { role: 'user', content: buildGapAnalysisUserPrompt(intakePayload, previousAnswers) },
@@ -634,7 +755,7 @@ export async function runGapAnalysis(intakePayload: IntakePayload, previousAnswe
 
 export async function runSummaryGeneration(intakePayload: IntakePayload, gapAnswers: GapQuestion[]) {
   const completion = await openai.chat.completions.parse({
-    model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+    model: process.env.OPENAI_MODEL ?? 'gpt-5.2',
     messages: [
       { role: 'system', content: buildSummarySystemPrompt() },
       { role: 'user', content: buildSummaryUserPrompt(intakePayload, gapAnswers) },
@@ -651,7 +772,7 @@ export async function runSummaryGeneration(intakePayload: IntakePayload, gapAnsw
 ```env
 # .env.example
 OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o          # Override model name
+OPENAI_MODEL=gpt-5.2          # Override model name
 WEBHOOK_URL=https://...       # TritonAI webhook endpoint
 PORT=3001                     # Backend port
 CORS_ORIGIN=http://localhost:5173  # Frontend origin for CORS
@@ -692,6 +813,10 @@ src/
 │   │   └── GapLoadingState.tsx       # Spinner + "Analyzing…" message
 │   ├── summary/
 │   │   ├── AISummaryView.tsx         # New AI-generated summary page (replaces SummaryView)
+│   │   ├── SummaryTabToggle.tsx      # Tab switcher: "AI Summary" | "My Answers"
+│   │   ├── MyAnswersView.tsx         # Read-only structured cards of raw user answers
+│   │   ├── AnswerCard.tsx            # Individual card (Project Idea, GATHER, REFINE, PRESENT, Gap Answers)
+│   │   ├── DecisionPathDisplay.tsx   # Reconstructs tree path from stageAnswers → node labels
 │   │   ├── EditableSection.tsx       # Inline-editable section wrapper
 │   │   ├── UnansweredQuestionsPanel.tsx  # Collapsible snoozed questions
 │   │   ├── SummaryExportBar.tsx      # Export + Submit buttons
@@ -857,7 +982,7 @@ CMD ["node", "dist/index.js"]
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `OPENAI_API_KEY` | Yes | — | OpenAI API key |
-| `OPENAI_MODEL` | No | `gpt-4o` | Model to use for LLM calls |
+| `OPENAI_MODEL` | No | `gpt-5.2` | Model to use for LLM calls |
 | `WEBHOOK_URL` | No | — | TritonAI webhook URL (for submit) |
 | `PORT` | No | `3001` | Backend server port |
 | `CORS_ORIGIN` | No | `*` | Allowed CORS origin |
@@ -865,12 +990,14 @@ CMD ["node", "dist/index.js"]
 
 ### 10.5 Cost Estimation
 
-| Call | Est. Input Tokens | Est. Output Tokens | Est. Cost (GPT-4o) |
+| Call | Est. Input Tokens | Est. Output Tokens | Est. Cost (gpt-5.2) |
 |------|-------------------|--------------------|---------------------|
-| Gap Analysis | ~3,000–5,000 | ~1,000–2,000 | ~$0.02–0.04 |
-| Summary Generation | ~3,000–5,000 | ~2,000–4,000 | ~$0.03–0.06 |
-| **Per session (typical)** | — | — | **~$0.05–0.10** |
-| **Per session (with re-runs)** | — | — | **~$0.15–0.30** |
+| Gap Analysis | ~3,000–5,000 | ~1,000–2,000 | ~$0.01–0.03 |
+| Summary Generation | ~3,000–5,000 | ~2,000–4,000 | ~$0.02–0.05 |
+| **Per session (typical)** | — | — | **~$0.03–0.08** |
+| **Per session (with re-runs)** | — | — | **~$0.10–0.20** |
+
+*Pricing: gpt-5.2 at $1.25/1M input, $10/1M output. For lower cost, use `gpt-5-mini` ($0.25/$2) via the `OPENAI_MODEL` env var.*
 
 No rate limiting enforced at the application level — the OpenAI API key's own rate limits apply. Consider adding per-session call counting if cost becomes a concern.
 
@@ -917,15 +1044,19 @@ No rate limiting enforced at the application level — the OpenAI API key's own 
 
 | # | Task | Details |
 |---|------|---------|
-| 4.1 | Create `AISummaryView` | Replaces `SummaryView` — renders AI-generated sections |
-| 4.2 | Create `EditableSection` | Inline plain-text editing wrapper |
-| 4.3 | Create `UnansweredQuestionsPanel` | Collapsible panel for snoozed questions |
-| 4.4 | Create `ManualEditConflict` | Dialog when regeneration conflicts with manual edits |
-| 4.5 | Create `SummaryExportBar` | Export (JSON, Markdown, email, print) + Submit button |
-| 4.6 | Create `SummaryLoadingState` | Spinner for summary generation/regeneration |
-| 4.7 | Wire up `use-ai-summary` hook | Hook that calls API, updates store, handles re-triggers |
-| 4.8 | Add print-friendly CSS | `@media print` styles for the summary page |
-| 4.9 | Build Markdown export | `buildSpecMarkdown()` function from AI summary sections |
+| 4.1 | Create `AISummaryView` | Replaces `SummaryView` — renders AI-generated sections with tab toggle |
+| 4.2 | Create `SummaryTabToggle` | Tab switcher component: "AI Summary" and "My Answers" |
+| 4.3 | Create `MyAnswersView` | Read-only structured cards showing raw user answers per stage |
+| 4.4 | Create `AnswerCard` | Reusable card component for each section (Project Idea, GATHER, REFINE, PRESENT, Gap Answers) |
+| 4.5 | Create `DecisionPathDisplay` | Reconstructs the user's decision tree path from `stageAnswers` by mapping answer IDs back to tree node questions and option labels |
+| 4.6 | Create `EditableSection` | Inline plain-text editing wrapper |
+| 4.7 | Create `UnansweredQuestionsPanel` | Collapsible panel for snoozed questions |
+| 4.8 | Create `ManualEditConflict` | Dialog when regeneration conflicts with manual edits |
+| 4.9 | Create `SummaryExportBar` | Export (JSON, Markdown, email, print) + Submit button |
+| 4.10 | Create `SummaryLoadingState` | Spinner for summary generation/regeneration |
+| 4.11 | Wire up `use-ai-summary` hook | Hook that calls API, updates store, handles re-triggers |
+| 4.12 | Add print-friendly CSS | `@media print` styles for the summary page |
+| 4.13 | Build Markdown export | `buildSpecMarkdown()` function from AI summary sections — includes both AI summary and raw answers |
 
 ### Phase 5: Integration & Polish
 
@@ -953,7 +1084,7 @@ No rate limiting enforced at the application level — the OpenAI API key's own 
 | # | Item | Status |
 |---|------|--------|
 | 1 | **Example submissions**: User to provide 2-3 curated examples from the CSV data | Pending |
-| 2 | **OpenAI model name**: Spec uses `gpt-4o` as default; update when `gpt-5.4` is available | Pending |
+| 2 | **OpenAI model name**: Using `gpt-5.2` as default. Override via `OPENAI_MODEL` env var. | Done |
 | 3 | **TritonAI webhook URL**: Needed for the submit endpoint | Pending |
 | 4 | **Exact section formatting**: Should the AI-generated Markdown follow specific UCSD formatting guidelines? | To be decided |
 | 5 | **Auth integration**: Should the gap analysis/summary endpoints require SSO auth (SPEC.md F3)? | To be decided |

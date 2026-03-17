@@ -15,7 +15,7 @@ export function ProgressBar() {
   const completedCount = stageOrder.filter((s) => stages[s].status === 'complete').length;
 
   return (
-    <div className="border-b border-gray-100 bg-white">
+    <div data-progress-bar className="border-b border-gray-100 bg-white">
       <div className="mx-auto max-w-5xl px-6 py-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs text-gray-500 uppercase tracking-widest font-medium">
