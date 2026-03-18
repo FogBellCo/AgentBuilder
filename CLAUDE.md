@@ -60,6 +60,10 @@ Single Zustand store (`useSessionStore`) with `persist` middleware (localStorage
 - **`clsx` + `tailwind-merge`** via `cn()` utility in `src/lib/utils.ts` for conditional class merging
 - **Summary export** (`src/lib/summary-formatter.ts`) builds an `IntakePayload` JSON object combining all stage data for download
 
+## Decision-Making
+
+Always use the AskUserQuestion tool to ask the user before making any design or functionality decisions. Do not assume or guess — confirm with the user first.
+
 ## System Overview Document
 
 A comprehensive `SYSTEM-OVERVIEW.md` exists at the project root. It documents every feature, data flow, component, API endpoint, type, and architectural decision in the system. **Whenever you make changes that affect the system's behavior, features, types, routes, API endpoints, store shape, decision trees, or component structure, you must update `SYSTEM-OVERVIEW.md` to reflect those changes.** Keep the document accurate and in sync with the codebase.

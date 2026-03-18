@@ -16,7 +16,7 @@ type SummarySections = NonNullable<AISummaryState['sections']>;
  *   ```json { payload } ```
  *   ---
  *   ## Raw Submission Data
- *   ### Project Idea / Data Classification / etc.
+ *   ### Your Request / Data Classification / etc.
  */
 export function buildSpecMarkdown(
   sections: SummarySections,
@@ -24,7 +24,7 @@ export function buildSpecMarkdown(
   gapAnswers: GapQuestion[],
 ): string {
   const lines: string[] = [];
-  const title = intakePayload.projectIdea.title || 'Untitled Project';
+  const title = intakePayload.projectIdea.title || 'Untitled Request';
 
   // ── Title ──
   lines.push(`# UCSD AI Tool Request — ${title}`);
@@ -53,10 +53,10 @@ export function buildSpecMarkdown(
     }
   }
 
-  // ── Gap Analysis Answers ──
+  // ── Follow-up Answers ──
   const answered = gapAnswers.filter((q) => q.status === 'answered');
   if (answered.length > 0) {
-    lines.push('## Gap Analysis Answers');
+    lines.push('## Follow-up Answers');
     lines.push('');
     for (const q of answered) {
       lines.push(`**Q:** ${q.question}`);
@@ -92,22 +92,17 @@ export function buildSpecMarkdown(
 
   // Project Idea
   const pi = intakePayload.projectIdea;
-  lines.push('### Project Idea');
+  lines.push('### Your Request');
   lines.push('');
   if (pi.title) lines.push(`- **Title:** ${pi.title}`);
   if (pi.description) lines.push(`- **Description:** ${pi.description}`);
   if (pi.domain) lines.push(`- **Domain:** ${pi.domain}`);
-  if (pi.timeline) lines.push(`- **Timeline:** ${pi.timeline}`);
-  if (pi.projectGoal) lines.push(`- **Goal:** ${pi.projectGoal}`);
-  if (pi.existingStatus) lines.push(`- **Current Status:** ${pi.existingStatus}`);
   if (pi.currentProcess) lines.push(`- **How It's Done Today:** ${pi.currentProcess}`);
-  if (pi.projectComplexity) lines.push(`- **Complexity:** ${pi.projectComplexity}`);
-  if (pi.preferredTool) lines.push(`- **Preferred Tool:** ${pi.preferredTool}`);
   lines.push('');
 
   // Data Classification
   const g = intakePayload.gather;
-  lines.push('### Data Classification');
+  lines.push('### Your Data');
   lines.push('');
   lines.push(`- **Protection Level:** ${g.protectionLevel} (${g.protectionLevelLabel})`);
   if (g.selectedDataSources.length > 0) {
@@ -116,10 +111,10 @@ export function buildSpecMarkdown(
     );
   }
   if (g.details.dataType.length > 0) {
-    lines.push(`- **Data Type:** ${g.details.dataType.join(', ')}`);
+    lines.push(`- **Data Format:** ${g.details.dataType.join(', ')}`);
   }
   if (g.details.sourceSystem) {
-    lines.push(`- **Source System:** ${g.details.sourceSystem}`);
+    lines.push(`- **Where It Lives:** ${g.details.sourceSystem}`);
   }
   if (g.details.dataSize) {
     lines.push(`- **Data Size:** ${g.details.dataSize}`);
@@ -129,7 +124,7 @@ export function buildSpecMarkdown(
     g.details.regulatoryContext.length > 0 &&
     !(g.details.regulatoryContext.length === 1 && g.details.regulatoryContext[0] === 'none')
   ) {
-    lines.push(`- **Regulatory Context:** ${g.details.regulatoryContext.join(', ')}`);
+    lines.push(`- **Special Rules:** ${g.details.regulatoryContext.join(', ')}`);
   }
   if (g.details.additionalNotes) {
     lines.push(`- **Additional Notes:** ${g.details.additionalNotes}`);
@@ -139,7 +134,7 @@ export function buildSpecMarkdown(
   // Refinement Plan
   const r = intakePayload.refine;
   if (r.refinements.length > 0 || r.audience || r.additionalContext) {
-    lines.push('### Refinement Plan');
+    lines.push('### AI Tasks');
     lines.push('');
     if (r.refinements.length > 0) {
       for (const [i, ref] of r.refinements.entries()) {

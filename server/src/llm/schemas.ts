@@ -76,6 +76,44 @@ export const SummaryResponseSchema = z.object({
   reclassification: ReclassificationSchema.optional(),
 });
 
+// --- Spec 02: User-Facing Summary Response Schema ---
+
+export const UserSummaryResponseSchema = z.object({
+  sections: z.object({
+    yourProject: z.string(),
+    theData: z.string(),
+    whatAIWouldHandle: z.string(),
+    howYoudSeeResults: z.string(),
+  }),
+});
+
+// --- Spec 02: OSI-Facing Summary Response Schema ---
+
+export const OSISummaryResponseSchema = z.object({
+  processOverview: z.object({
+    purpose: z.string(),
+    description: z.string(),
+    keyPoints: z.array(z.string()),
+    potentialImpact: z.array(z.string()),
+    questionsAndConsiderations: z.array(z.string()),
+  }),
+  context: z.string(),
+  challenge: z.string(),
+  request: z.string(),
+  impactBullets: z.array(z.string()),
+});
+
+// --- Spec 02: Claude Code Prompt Bundle Response Schema ---
+
+export const PromptBundleResponseSchema = z.object({
+  businessContext: z.string(),
+  functionalRequirements: z.string(),
+  outOfScope: z.string(),
+  suggestedArchitecture: z.string(),
+  acceptanceCriteria: z.string(),
+  implementationNotes: z.string(),
+});
+
 // --- Inferred TypeScript Types ---
 
 export type GapQuestionOption = z.infer<typeof GapQuestionOptionSchema>;
@@ -84,3 +122,6 @@ export type Reclassification = z.infer<typeof ReclassificationSchema>;
 export type GapAnalysisResponse = z.infer<typeof GapAnalysisResponseSchema>;
 export type SummarySection = z.infer<typeof SummarySectionSchema>;
 export type SummaryResponse = z.infer<typeof SummaryResponseSchema>;
+export type UserSummaryResponse = z.infer<typeof UserSummaryResponseSchema>;
+export type OSISummaryResponse = z.infer<typeof OSISummaryResponseSchema>;
+export type PromptBundleResponse = z.infer<typeof PromptBundleResponseSchema>;

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Lightbulb, Search, Sliders, Monitor } from 'lucide-react';
 import { useSessionStore } from '@/store/session-store';
-import { useUserEmail } from '@/hooks/use-user-email';
+import { useAuth } from '@/hooks/use-auth';
 import { EmailPrompt } from '@/components/landing/EmailPrompt';
 import { SubmissionsList } from '@/components/landing/SubmissionsList';
 
@@ -10,7 +10,7 @@ const steps = [
   {
     icon: Lightbulb,
     label: 'Describe',
-    desc: 'Tell us about your idea',
+    desc: 'Tell us what you need',
   },
   {
     icon: Search,
@@ -31,7 +31,7 @@ const steps = [
 
 export function LandingPage() {
   const navigate = useNavigate();
-  const { isIdentified } = useUserEmail();
+  const { isAuthenticated } = useAuth();
 
   const handleGetStarted = () => {
     useSessionStore.getState().resetSession();
@@ -50,7 +50,7 @@ export function LandingPage() {
           Request an AI Tool
         </h1>
         <p className="text-lg text-gray-600 leading-relaxed mb-4">
-          Got an idea for using AI at UCSD? Answer a few quick questions
+          Need AI to help with something at UCSD? Answer a few quick questions
           and we'll figure out what's possible and what you'll need.
         </p>
         <p className="text-sm text-gray-500 leading-relaxed mb-12">
@@ -109,7 +109,7 @@ export function LandingPage() {
 
       <div className="mt-16 w-full max-w-2xl">
         <EmailPrompt />
-        {isIdentified && <SubmissionsList />}
+        {isAuthenticated && <SubmissionsList />}
       </div>
     </div>
   );

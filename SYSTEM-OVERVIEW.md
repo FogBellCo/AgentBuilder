@@ -49,6 +49,13 @@ UCSD AgentBuilder is a guided decision-tree tool that helps non-technical UCSD b
 │   │   │                       #   ManualEditConflict, UnansweredQuestionsPanel, SummaryLoadingState
 │   │   ├── gap-analysis/       # GapAnalysisPage, GapQuestionList, ReclassificationBanner
 │   │   ├── guidance/           # Guidance page component
+│   │   ├── admin/              # Admin dashboard (see §19)
+│   │   │   ├── AdminLayout, AdminGuard, AdminLogin, AdminHeader, AdminSidebar, ConfirmDialog
+│   │   │   ├── queue/          # SubmissionQueue, QueueSearch, QueueFilters, BatchActionBar, QuickActions, StatusBadge, ProtectionBadge, CompletenessBar
+│   │   │   ├── detail/         # SubmissionDetail, DetailHeader, IntakeFormatView, InternalNotes, ScoreOverridePanel, FollowUpModal, ActivityTimeline
+│   │   │   ├── analytics/      # AnalyticsOverview, SummaryCards, SubmissionsChart, DepartmentChart, ProtectionLevelChart, ProjectTypeChart, DataSourcesChart
+│   │   │   ├── prioritization/ # PrioritizationMatrix, ScatterPlot, RankedList
+│   │   │   └── settings/       # AdminSettings, TeamMemberList
 │   │   └── layout/             # Header, Footer, Breadcrumbs, ProgressBar, StagesSidebar
 │   ├── data/
 │   │   ├── gather-tree.ts      # GATHER stage decision tree
@@ -64,12 +71,19 @@ UCSD AgentBuilder is a guided decision-tree tool that helps non-technical UCSD b
 │   │   ├── use-submissions.ts     # Fetch user's past submissions from API
 │   │   ├── use-auto-save.ts       # Debounced auto-save to backend
 │   │   ├── use-start-over.ts      # Reset session + navigate home
-│   │   └── use-breadcrumbs.ts     # Generate breadcrumb trail from state
+│   │   ├── use-breadcrumbs.ts     # Generate breadcrumb trail from state
+│   │   ├── use-admin-submissions.ts  # Admin queue: list, status, flag, batch mutations
+│   │   ├── use-admin-submission.ts   # Admin detail: status, assign, flag, scores, follow-up
+│   │   ├── use-admin-notes.ts        # Admin internal notes CRUD
+│   │   ├── use-admin-team.ts         # Admin team member CRUD
+│   │   └── use-admin-analytics.ts    # Admin analytics data query
 │   ├── lib/
 │   │   ├── tree-engine.ts         # Core decision tree traversal + classification
 │   │   ├── summary-formatter.ts   # Build IntakePayload JSON, plaintext, mailto, clipboard
 │   │   ├── summary-markdown.ts    # Build full markdown spec from AI sections + gap answers
 │   │   ├── api-client.ts          # HTTP client for all backend API calls
+│   │   ├── admin-api-client.ts    # HTTP client for admin /api/admin/* endpoints (Bearer token auth)
+│   │   ├── priority-score.ts      # Priority scoring algorithm (desirability/viability/feasibility → impact/effort/priority)
 │   │   └── utils.ts               # cn(), generateId(), timeAgo()
 │   ├── pages/
 │   │   ├── Landing.tsx
@@ -83,7 +97,8 @@ UCSD AgentBuilder is a guided decision-tree tool that helps non-technical UCSD b
 │   │   └── session-store.ts       # Zustand store (single source of truth)
 │   ├── types/
 │   │   ├── decision-tree.ts       # DecisionNode, Stage, ProtectionLevel, OutputFormat, etc.
-│   │   └── gap-analysis.ts        # GapQuestion, Reclassification, AISummaryState
+│   │   ├── gap-analysis.ts        # GapQuestion, Reclassification, AISummaryState
+│   │   └── admin.ts               # AdminSubmissionRow, AdminSubmissionDetail, ScoreOverrides, TeamMember, AnalyticsData
 │   ├── styles/
 │   │   └── print.css              # Print-specific overrides
 │   ├── index.css                  # Tailwind import + UCSD design tokens
@@ -91,18 +106,38 @@ UCSD AgentBuilder is a guided decision-tree tool that helps non-technical UCSD b
 ├── server/                     # Backend source
 │   ├── src/
 │   │   ├── index.ts               # Hono app, routes, CORS, static serving
-│   │   ├── db.ts                  # SQLite setup, submissions table, CRUD operations
 │   │   ├── llm/
 │   │   │   ├── client.ts          # OpenAI API calls (gap analysis, summary generation)
 │   │   │   ├── schemas.ts         # Zod schemas for structured LLM output
 │   │   │   └── prompts.ts         # System/user prompts with example submissions
-│   │   └── lib/
-│   │       └── webhook.ts         # Forward submissions to TritonAI webhook
+│   │   ├── lib/
+│   │   │   ├── db-adapter.ts      # DatabaseAdapter interface + all row/input types
+│   │   │   ├── db-adapters/
+│   │   │   │   └── sqlite.ts      # SQLite implementation (schema v3, WAL mode)
+│   │   │   ├── db-factory.ts      # Creates adapter instance from env config
+│   │   │   ├── priority-score.ts  # Server-side priority scoring (mirror of frontend)
+│   │   │   ├── jwt.ts             # JWT sign/verify helpers
+│   │   │   ├── email-provider.ts  # Email provider interface
+│   │   │   ├── email-providers/   # Console, SMTP implementations
+│   │   │   └── email-templates.ts # Magic link email template
+│   │   ├── routes/
+│   │   │   ├── auth.ts            # Magic link auth (POST /magic-link, GET /verify, POST /logout, GET /me)
+│   │   │   ├── submissions.ts     # User-facing submission CRUD
+│   │   │   ├── submit.ts          # Final submission + webhook
+│   │   │   └── admin/
+│   │   │       ├── index.ts       # Admin JWT middleware + route mounting
+│   │   │       ├── auth.ts        # Admin token → JWT exchange (POST /api/admin/auth)
+│   │   │       ├── submissions.ts # Admin submission management (list, detail, status, flag, scores, assign, batch, notes, timeline, export)
+│   │   │       ├── analytics.ts   # Aggregated analytics (GET /api/admin/analytics)
+│   │   │       └── team.ts        # Team member CRUD (persisted to SQLite)
+│   │   └── middleware/
+│   │       ├── auth.ts            # User auth middleware (cookie-based JWT)
+│   │       └── rate-limit.ts      # Rate limiting middleware
 │   ├── data/
 │   │   └── agentbuilder.db        # SQLite database file
 │   ├── package.json
 │   ├── tsconfig.json
-│   └── .env                       # OPENAI_API_KEY, OPENAI_MODEL, WEBHOOK_URL, PORT, CORS_ORIGIN
+│   └── .env                       # OPENAI_API_KEY, OPENAI_MODEL, WEBHOOK_URL, PORT, CORS_ORIGIN, JWT_SECRET, ADMIN_TOKEN
 ├── .github/workflows/
 │   └── deploy.yml                 # CI/CD: build + deploy to GitHub Pages
 ├── vite.config.ts
@@ -344,6 +379,8 @@ AISummaryState { status, sections (7 keys) | null, manualEdits, errorMessage? }
 
 ### API Endpoints
 
+**User-facing endpoints:**
+
 | Method | Route | Purpose |
 |--------|-------|---------|
 | POST | `/api/gap-analysis` | Send IntakePayload to LLM → returns gap questions, assessment, reclassification |
@@ -353,14 +390,50 @@ AISummaryState { status, sections (7 keys) | null, manualEdits, errorMessage? }
 | GET | `/api/submissions/:id` | Get single submission with deserialized session state |
 | PUT | `/api/submissions/:id` | Upsert submission (email, title, status, sessionState) |
 | DELETE | `/api/submissions/:id` | Delete submission |
+| POST | `/api/auth/magic-link` | Send magic link email |
+| GET | `/api/auth/verify` | Verify magic link token → set session cookie |
+| POST | `/api/auth/logout` | Clear session cookie |
+| GET | `/api/auth/me` | Get current user info |
 | GET | `/api/health` | Health check → `{ status: 'ok', timestamp }` |
 
-### Database (`server/src/db.ts`)
+**Admin endpoints** (all require `Authorization: Bearer <admin-jwt>`):
 
-SQLite database at `server/data/agentbuilder.db`:
-- **Table**: `submissions` (id, email, title, status, session_state JSON, created_at, updated_at)
-- **Indexes**: `idx_submissions_email`, `idx_submissions_updated` (DESC)
-- WAL mode enabled for concurrency
+| Method | Route | Purpose |
+|--------|-------|---------|
+| POST | `/api/admin/auth` | Exchange admin token for JWT (dev: any non-empty token accepted) |
+| GET | `/api/admin/submissions` | List submissions with search, filter, sort, pagination |
+| GET | `/api/admin/submissions/:id` | Full detail with session state, notes, timeline, score overrides |
+| PUT | `/api/admin/submissions/:id/status` | Change submission status (creates audit log entry) |
+| PUT | `/api/admin/submissions/:id/assign` | Assign submission to a team member |
+| PUT | `/api/admin/submissions/:id/flag` | Toggle submission flag (persisted to DB) |
+| PUT | `/api/admin/submissions/:id/scores` | Save score overrides (desirability, viability, feasibility) |
+| POST | `/api/admin/submissions/:id/question` | Send follow-up question (sets status to needs_info) |
+| GET | `/api/admin/submissions/:id/notes` | Get internal notes |
+| POST | `/api/admin/submissions/:id/notes` | Add internal note |
+| GET | `/api/admin/submissions/:id/timeline` | Get activity timeline (status changes) |
+| GET | `/api/admin/submissions/export` | Export filtered submissions as CSV or JSON |
+| POST | `/api/admin/submissions/:id/export/:format` | Export single submission (json or markdown) |
+| POST | `/api/admin/submissions/batch` | Batch status change, archive, or unarchive |
+| GET | `/api/admin/analytics` | Aggregated analytics with date range filter |
+| GET | `/api/admin/team` | List team members |
+| POST | `/api/admin/team` | Add team member |
+| DELETE | `/api/admin/team/:id` | Remove team member |
+
+### Database (`server/src/lib/db-adapter.ts` → `sqlite.ts`)
+
+SQLite database at `server/data/agentbuilder.db` (WAL mode, schema version 3):
+
+| Table | Key Columns | Purpose |
+|-------|-------------|---------|
+| `users` | id, email, display_name, role, created_at, last_login_at | User accounts (magic link auth) |
+| `auth_tokens` | token, user_id, type, expires_at, consumed_at | Magic link + session tokens |
+| `submissions` | id, user_id, title, description, status, protection_level, domain, vc_area, completeness_pct, output_formats, session_state, version, assigned_to, flagged, score_overrides, submitted_at | Intake submissions |
+| `status_history` | id, submission_id, from_status, to_status, changed_by, reason | Admin status change audit log |
+| `admin_notes` | id, submission_id, author_id, content | Internal OSI notes per submission |
+| `team_members` | id, name, email | OSI team members (for assignment + notes) |
+| `gap_analysis_responses` | id, submission_id, run_number, overall_assessment, questions, reclassification | Cached gap analysis results |
+
+**Submission statuses**: `draft`, `submitted`, `in_review`, `needs_info`, `approved`, `building`, `complete`, `archived`
 
 ### LLM Integration (`server/src/llm/`)
 
@@ -383,6 +456,9 @@ SQLite database at `server/data/agentbuilder.db`:
 | `WEBHOOK_URL` | No | — | TritonAI webhook endpoint |
 | `PORT` | No | `3001` | Server port |
 | `CORS_ORIGIN` | No | `http://localhost:5173` | Allowed CORS origin |
+| `JWT_SECRET` | Yes (prod) | `dev-admin-secret-...` | Secret for signing JWTs |
+| `ADMIN_TOKEN` | No | any non-empty (dev) | Admin access token for dashboard login |
+| `ADMIN_JWT_SECRET` | No | falls back to `JWT_SECRET` | Separate secret for admin JWTs |
 
 ---
 
@@ -413,6 +489,21 @@ Helper functions: `apiFetch<T>()`, `apiGet<T>()`, `apiPut<T>()`
 | `useAutoSave()` | Debounced (2s) auto-save to backend when email is set and projectIdea exists |
 | `useStartOver()` | Reset session + navigate to home |
 | `useBreadcrumbs()` | Generate breadcrumb items from current stage/node state |
+| `useAdminSubmissions(filters)` | Admin queue: paginated list with search/filter/sort |
+| `useUpdateStatus()` | Optimistic status change with toast notification |
+| `useToggleFlag()` | Optimistic flag toggle with toast notification |
+| `useBatchAction()` | Batch status change / archive / unarchive |
+| `useAdminSubmission(id)` | Single submission detail query |
+| `useSubmissionStatusUpdate(id)` | Detail-view status change |
+| `useSubmissionAssign(id)` | Assign submission to team member |
+| `useScoreOverrides(id)` | Save desirability/viability/feasibility overrides |
+| `useFollowUpQuestion(id)` | Send follow-up question to user |
+| `useAdminNotes(id)` | Fetch internal notes for submission |
+| `useAddNote(id)` | Add internal note |
+| `useAdminTeam()` | Fetch team members list |
+| `useAddTeamMember()` | Add team member |
+| `useRemoveTeamMember()` | Remove team member |
+| `useAdminAnalytics(from, to)` | Fetch aggregated analytics data |
 
 ---
 
@@ -566,6 +657,8 @@ Vite config proxies `/api/*` to `http://localhost:3001` in development.
 | `/gap-analysis` | Implicit (all stages expected) | — |
 | `/summary` | Implicit (all stages expected) | — |
 | `/guidance/:guidanceId` | Validates p1–p4 | Shows "Not Found" |
+| `/admin/login` | None | — |
+| `/admin/*` | `AdminGuard` (checks localStorage token) | → `/admin/login` |
 
 ---
 
@@ -579,3 +672,45 @@ Vite config proxies `/api/*` to `http://localhost:3001` in development.
 6. **Structured LLM outputs** — Zod schemas enforce response shape from OpenAI API
 7. **Manual edit tracking** — AI summary edits stored separately for conflict detection on regeneration
 8. **Auto-save to backend** — debounced upserts maintain server-side draft state
+9. **Admin uses separate JWT auth** — admin token exchange produces a short-lived JWT stored in localStorage (`ucsd-agentbuilder-admin-token`), independent of user magic-link auth
+10. **Priority scores computed server-side** — `calculatePriorityScores()` runs on the backend when listing submissions, using sessionState + score overrides, so the prioritization matrix doesn't need to fetch individual session states
+
+---
+
+## 19. Admin Dashboard
+
+### Access
+
+Navigate to `/#/admin/login`. In development, any non-empty string is accepted as the admin token. In production, the token must match the `ADMIN_TOKEN` env var.
+
+### Pages
+
+| Route | Component | Purpose |
+|-------|-----------|---------|
+| `/admin/login` | `AdminLogin` | Token-based login |
+| `/admin/submissions` | `SubmissionQueue` | Searchable, filterable, sortable submission table with batch actions |
+| `/admin/submissions/:id` | `SubmissionDetail` | Full submission detail with status management, assignment, notes, scores, timeline |
+| `/admin/analytics` | `AnalyticsOverview` | Summary cards + charts (submissions over time, by department, by protection level) |
+| `/admin/prioritization` | `PrioritizationMatrix` | Impact vs. effort scatter plot + ranked list (scores from backend) |
+| `/admin/settings` | `AdminSettings` | Team member management (persisted to SQLite) |
+
+### Key Features
+
+- **Toast notifications** (sonner) on all mutations: status changes, flags, notes, exports, batch actions, team changes
+- **Confirmation dialogs** for destructive actions: batch archive, team member deletion
+- **Score overrides**: Admin can override auto-calculated desirability/viability/feasibility scores per submission (persisted to `score_overrides` column)
+- **Flag submissions**: Toggle flag on submissions for attention (persisted to `flagged` column)
+- **Assignment**: Assign submissions to team members via dropdown in detail header
+- **N/A collapse**: Right sidebar in detail view shows "Scoring data not yet available" when OSI scoring data is empty, instead of a wall of N/A values
+- **Priority scoring**: Server-side computation using session state data; scores returned inline in list API response for the prioritization matrix
+
+### State Management
+
+Admin state is managed entirely via React Query (`@tanstack/react-query`) with a dedicated `QueryClient` in `AdminLayout`. No Zustand store is used for admin. Auth token stored in localStorage key `ucsd-agentbuilder-admin-token`.
+
+### Admin API Client (`src/lib/admin-api-client.ts`)
+
+All admin API calls use `adminFetch<T>()` which:
+- Reads JWT from localStorage and sends as `Authorization: Bearer` header
+- On 401 response: clears token and throws `AdminAuthError`
+- Handles JSON serialization/deserialization

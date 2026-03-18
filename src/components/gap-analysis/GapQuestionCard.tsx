@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Moon, Send } from 'lucide-react';
 import type { GapQuestion } from '@/types/gap-analysis';
 
+const OTHER_OPTION_ID = '__other__';
+
 interface GapQuestionCardProps {
   question: GapQuestion;
   onAnswer: (questionId: string, answer: string, selectedOptions?: string[]) => void;
@@ -13,6 +15,7 @@ export function GapQuestionCard({ question, onAnswer, onSnooze }: GapQuestionCar
   const [freeText, setFreeText] = useState('');
   const [selectedSingle, setSelectedSingle] = useState<string | null>(null);
   const [selectedMulti, setSelectedMulti] = useState<string[]>([]);
+  const [otherText, setOtherText] = useState('');
 
   const isCritical = question.priority === 'critical';
 
@@ -21,8 +24,10 @@ export function GapQuestionCard({ question, onAnswer, onSnooze }: GapQuestionCar
       case 'free_text':
         return freeText.trim().length > 0;
       case 'single_choice':
+        if (selectedSingle === OTHER_OPTION_ID) return otherText.trim().length > 0;
         return selectedSingle !== null;
       case 'multi_choice':
+        if (selectedMulti.includes(OTHER_OPTION_ID) && otherText.trim().length === 0) return false;
         return selectedMulti.length > 0;
       default:
         return false;
@@ -37,13 +42,20 @@ export function GapQuestionCard({ question, onAnswer, onSnooze }: GapQuestionCar
         onAnswer(question.id, freeText.trim());
         break;
       case 'single_choice': {
+        if (selectedSingle === OTHER_OPTION_ID) {
+          onAnswer(question.id, `Other: ${otherText.trim()}`, [OTHER_OPTION_ID]);
+          break;
+        }
         const label = question.options?.find((o) => o.id === selectedSingle)?.label ?? '';
         onAnswer(question.id, label, selectedSingle ? [selectedSingle] : undefined);
         break;
       }
       case 'multi_choice': {
         const labels = selectedMulti
-          .map((id) => question.options?.find((o) => o.id === id)?.label ?? '')
+          .map((id) => {
+            if (id === OTHER_OPTION_ID) return `Other: ${otherText.trim()}`;
+            return question.options?.find((o) => o.id === id)?.label ?? '';
+          })
           .filter(Boolean)
           .join(', ');
         onAnswer(question.id, labels, selectedMulti);
@@ -124,6 +136,29 @@ export function GapQuestionCard({ question, onAnswer, onSnooze }: GapQuestionCar
                 <span className="text-sm text-navy">{option.label}</span>
               </label>
             ))}
+            {/* Other (please specify) */}
+            <label
+              className="flex items-center gap-2.5 cursor-pointer rounded-md border border-gray-200 px-3 py-2.5 hover:border-blue/40 transition-colors"
+            >
+              <input
+                type="radio"
+                name={`gap-q-${question.id}`}
+                value={OTHER_OPTION_ID}
+                checked={selectedSingle === OTHER_OPTION_ID}
+                onChange={() => setSelectedSingle(OTHER_OPTION_ID)}
+                className="h-4 w-4 text-blue accent-blue"
+              />
+              <span className="text-sm text-navy">Other (please specify)</span>
+            </label>
+            {selectedSingle === OTHER_OPTION_ID && (
+              <textarea
+                value={otherText}
+                onChange={(e) => setOtherText(e.target.value)}
+                placeholder="Please describe..."
+                rows={2}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-navy placeholder-gray-400 focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue resize-none ml-6"
+              />
+            )}
           </div>
         )}
 
@@ -144,6 +179,28 @@ export function GapQuestionCard({ question, onAnswer, onSnooze }: GapQuestionCar
                 <span className="text-sm text-navy">{option.label}</span>
               </label>
             ))}
+            {/* Other (please specify) */}
+            <label
+              className="flex items-center gap-2.5 cursor-pointer rounded-md border border-gray-200 px-3 py-2.5 hover:border-blue/40 transition-colors"
+            >
+              <input
+                type="checkbox"
+                value={OTHER_OPTION_ID}
+                checked={selectedMulti.includes(OTHER_OPTION_ID)}
+                onChange={() => toggleMulti(OTHER_OPTION_ID)}
+                className="h-4 w-4 text-blue accent-blue rounded"
+              />
+              <span className="text-sm text-navy">Other (please specify)</span>
+            </label>
+            {selectedMulti.includes(OTHER_OPTION_ID) && (
+              <textarea
+                value={otherText}
+                onChange={(e) => setOtherText(e.target.value)}
+                placeholder="Please describe..."
+                rows={2}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-navy placeholder-gray-400 focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue resize-none ml-6"
+              />
+            )}
           </div>
         )}
       </div>

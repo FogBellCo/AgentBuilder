@@ -1,13 +1,6 @@
 import { Lightbulb } from 'lucide-react';
 import type { ProjectIdea } from '@/types/decision-tree';
 
-const timelineLabels: Record<string, string> = {
-  exploring: 'Just exploring',
-  this_quarter: 'This quarter',
-  this_month: 'This month',
-  immediate: 'Immediate need',
-};
-
 interface ProjectIdeaSummaryProps {
   idea: ProjectIdea;
 }
@@ -35,34 +28,10 @@ export function ProjectIdeaSummary({ idea }: ProjectIdeaSummaryProps) {
           </p>
         </div>
 
-        {idea.projectGoal && (
-          <div className="text-xs">
-            <span className="font-medium text-navy">Goal:</span>{' '}
-            <span className="text-gray-600">{idea.projectGoal}</span>
-          </div>
-        )}
-        {idea.existingStatus && (
-          <div className="text-xs">
-            <span className="font-medium text-navy">Current Status:</span>{' '}
-            <span className="text-gray-600">{idea.existingStatus}</span>
-          </div>
-        )}
         {idea.currentProcess && (
           <div className="text-xs">
             <span className="font-medium text-navy">How It's Done Today:</span>{' '}
             <span className="text-gray-600">{idea.currentProcess}</span>
-          </div>
-        )}
-        {idea.projectComplexity && (
-          <div className="text-xs">
-            <span className="font-medium text-navy">Complexity:</span>{' '}
-            <span className="text-gray-600">{idea.projectComplexity}</span>
-          </div>
-        )}
-        {idea.preferredTool && (
-          <div className="text-xs">
-            <span className="font-medium text-navy">Preferred Tool:</span>{' '}
-            <span className="text-gray-600">{idea.preferredTool}</span>
           </div>
         )}
 
@@ -70,11 +39,6 @@ export function ProjectIdeaSummary({ idea }: ProjectIdeaSummaryProps) {
           {idea.domain && (
             <span className="inline-block rounded-full bg-sand px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-navy">
               {idea.domain}
-            </span>
-          )}
-          {idea.timeline && (
-            <span className="inline-block rounded-full bg-blue/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-blue">
-              {timelineLabels[idea.timeline] ?? idea.timeline}
             </span>
           )}
         </div>

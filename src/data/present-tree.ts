@@ -97,15 +97,15 @@ export const presentTree: DecisionNode[] = [
   {
     id: 'present-confirm',
     stage: 'PRESENT',
-    question: 'Checking feasibility for your chosen format...',
-    description: 'We\'ll verify this output format works with your data classification level.',
+    question: 'Checking your format against your data level...',
+    description: 'We\'ll make sure this output works with the type of data you described.',
     inputType: 'confirmation',
     options: [
       {
         id: 'confirm-present',
         label: 'See my complete summary',
         icon: 'CheckCircle2',
-        nextNodeId: null,
+        nextNodeId: 'present-urgency',
       },
       {
         id: 'change-format',
@@ -113,6 +113,32 @@ export const presentTree: DecisionNode[] = [
         icon: 'ArrowLeft',
         nextNodeId: 'present-format',
       },
+    ],
+  },
+  {
+    id: 'present-urgency',
+    stage: 'PRESENT',
+    question: 'How quickly do people need to see results?',
+    description: 'This helps us decide whether the AI should work in real-time, on a schedule, or on demand.',
+    inputType: 'single_choice',
+    options: [
+      { id: 'realtime', label: 'Right away -- as fast as possible', icon: 'Zap', nextNodeId: 'present-cross-dept' },
+      { id: 'same_day', label: 'Same day is fine', icon: 'Clock', nextNodeId: 'present-cross-dept' },
+      { id: 'within_week', label: 'Within a week', icon: 'CalendarDays', nextNodeId: 'present-cross-dept' },
+      { id: 'whenever', label: 'Whenever it\'s ready', icon: 'Coffee', nextNodeId: 'present-cross-dept' },
+    ],
+  },
+  {
+    id: 'present-cross-dept',
+    stage: 'PRESENT',
+    question: 'Would other departments benefit from this too, or just yours?',
+    description: 'If others could use this, it might change how we set it up.',
+    inputType: 'single_choice',
+    options: [
+      { id: 'just_us', label: 'Just us', icon: 'User', nextNodeId: null },
+      { id: 'few_others', label: 'Maybe a few other groups', icon: 'Users', nextNodeId: null },
+      { id: 'many_teams', label: 'Lots of teams could use this', icon: 'Building2', nextNodeId: null },
+      { id: 'whole_campus', label: 'The whole campus', icon: 'Globe', nextNodeId: null },
     ],
   },
 ];

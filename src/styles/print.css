@@ -1,5 +1,5 @@
 /**
- * Print styles for the AI Summary view.
+ * Print styles for the summary views.
  *
  * Hides interactive chrome and ensures all summary sections
  * are fully expanded with clean typography and page breaks.
@@ -12,7 +12,8 @@
   footer,
   [data-sidebar],
   [data-breadcrumbs],
-  [data-progress-bar] {
+  [data-progress-bar],
+  [data-no-print] {
     display: none !important;
   }
 
@@ -27,7 +28,7 @@
     display: none !important;
   }
 
-  /* Tab toggle (AI Summary / My Answers) */
+  /* Tab toggle (Your Summary / My Answers) */
   [data-tab-toggle] {
     display: none !important;
   }
@@ -50,6 +51,11 @@
 
   /* Manual edit conflict modal */
   [data-conflict-modal] {
+    display: none !important;
+  }
+
+  /* "Did we get this right?" banner — hide in print */
+  .did-we-get-this-right {
     display: none !important;
   }
 
@@ -81,7 +87,6 @@
   }
 
   /* ── Summary sections ── */
-  /* Ensure all sections are visible (no collapsed state) */
   [data-summary-section] {
     display: block !important;
     break-inside: avoid;
@@ -113,9 +118,29 @@
     page-break-after: avoid;
   }
 
+  /* Force page break before Context/Challenge/Request */
+  [data-page-break-before] {
+    break-before: page;
+  }
+
   /* Force page break before major grouped sections */
   [data-summary-section]:nth-child(4) {
     page-break-before: always;
+  }
+
+  /* ── Page header/footer ── */
+  @page {
+    margin: 20mm;
+    @top-center {
+      content: "UCSD AI Tool Request";
+      font-size: 8pt;
+      color: #666;
+    }
+    @bottom-center {
+      content: counter(page) " of " counter(pages);
+      font-size: 8pt;
+      color: #666;
+    }
   }
 
   /* ── Links ── */
@@ -147,5 +172,11 @@
   [style*="background-color"] {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
+  }
+
+  /* ── Force color printing for progress bars ── */
+  .print-color-exact {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }

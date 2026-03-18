@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 
-type SummaryTab = 'ai-summary' | 'my-answers';
+export type SummaryTab = 'your-summary' | 'my-answers';
 
 interface SummaryTabToggleProps {
   activeTab: SummaryTab;
@@ -8,7 +8,7 @@ interface SummaryTabToggleProps {
 }
 
 const tabs: { id: SummaryTab; label: string }[] = [
-  { id: 'ai-summary', label: 'AI Summary' },
+  { id: 'your-summary', label: 'Your Summary' },
   { id: 'my-answers', label: 'My Answers' },
 ];
 

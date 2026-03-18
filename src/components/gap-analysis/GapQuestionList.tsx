@@ -1,22 +1,21 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Sparkles } from 'lucide-react';
 import { GapQuestionCard } from './GapQuestionCard';
+import { SnoozedSection } from './SnoozedSection';
 import type { GapQuestion } from '@/types/gap-analysis';
 
 interface GapQuestionListProps {
   questions: GapQuestion[];
   onAnswer: (questionId: string, answer: string, selectedOptions?: string[]) => void;
   onSnooze: (questionId: string) => void;
+  onUnsnooze: (questionId: string) => void;
 }
 
-export function GapQuestionList({ questions, onAnswer, onSnooze }: GapQuestionListProps) {
+export function GapQuestionList({ questions, onAnswer, onSnooze, onUnsnooze }: GapQuestionListProps) {
   const pending = questions.filter((q) => q.status === 'pending');
+  const snoozed = questions.filter((q) => q.status === 'snoozed');
   const critical = pending.filter((q) => q.priority === 'critical');
   const niceToHave = pending.filter((q) => q.priority === 'nice_to_have');
-
-  if (pending.length === 0) {
-    return null;
-  }
 
   return (
     <div className="space-y-6">
@@ -79,6 +78,9 @@ export function GapQuestionList({ questions, onAnswer, onSnooze }: GapQuestionLi
           </div>
         </section>
       )}
+
+      {/* Snoozed section */}
+      <SnoozedSection questions={snoozed} onUnsnooze={onUnsnooze} />
     </div>
   );
 }

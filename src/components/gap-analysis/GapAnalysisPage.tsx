@@ -1,15 +1,29 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, CheckCircle2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, RefreshCw, WifiOff, AlertTriangle, SkipForward } from 'lucide-react';
 import { useSessionStore } from '@/store/session-store';
 import { useGapAnalysis } from '@/hooks/use-gap-analysis';
 import { GapLoadingState } from './GapLoadingState';
 import { GapQuestionList } from './GapQuestionList';
 import { ReclassificationBanner } from './ReclassificationBanner';
+import { CompletenessBar } from './CompletenessBar';
 import type { Stage } from '@/types/decision-tree';
 
 const stageOrder: Stage[] = ['GATHER', 'REFINE', 'PRESENT'];
+
+function getCompletenessDescription(score: number, pendingCount: number): string {
+  if (score >= 80 && pendingCount === 0) {
+    return 'Your submission is thorough and ready for summary generation.';
+  }
+  if (score >= 80) {
+    return 'Your submission looks great. Answer or snooze the remaining questions to proceed.';
+  }
+  if (score >= 50) {
+    return 'Almost there -- a few questions will complete your submission.';
+  }
+  return 'Answering these questions will help our team understand your request better.';
+}
 
 export function GapAnalysisPage() {
   const navigate = useNavigate();
@@ -20,9 +34,18 @@ export function GapAnalysisPage() {
     overallAssessment,
     reclassification,
     errorMessage,
+    completenessScore,
+    readinessLabel,
+    runCount,
+    pendingQuestions,
+    snoozedQuestions,
+    allResolved,
+    noGaps,
+    isStaticFallback,
     runAnalysis,
     answerQuestion,
     snoozeQuestion,
+    unsnoozeQuestion,
   } = useGapAnalysis();
 
   const allStagesComplete = stageOrder.every(
@@ -43,10 +66,6 @@ export function GapAnalysisPage() {
     }
   }, [allStagesComplete, status, runAnalysis]);
 
-  const pendingCount = questions.filter((q) => q.status === 'pending').length;
-  const allResolved = questions.length > 0 && pendingCount === 0;
-  const noGaps = status === 'ready' && questions.length === 0;
-
   const handleAcceptReclassification = () => {
     if (reclassification) {
       applyReclassification(reclassification.suggestedLevel);
@@ -54,16 +73,23 @@ export function GapAnalysisPage() {
   };
 
   const handleDismissReclassification = () => {
-    // Dismiss by applying current level (clears the reclassification from store)
     if (reclassification) {
       applyReclassification(reclassification.currentLevel);
     }
   };
 
-  const resolvedCount = useMemo(
-    () => questions.filter((q) => q.status !== 'pending').length,
-    [questions],
-  );
+  const canProceed = allResolved || noGaps;
+  const hasSnoozed = snoozedQuestions.length > 0;
+  const hasPending = pendingQuestions.length > 0;
+  const criticalPendingCount = pendingQuestions.filter((q) => q.priority === 'critical').length;
+
+  const handleSkipToSummary = useCallback(() => {
+    // Snooze all pending questions so they appear in the summary's UnansweredQuestionsPanel
+    for (const q of pendingQuestions) {
+      snoozeQuestion(q.id);
+    }
+    navigate('/summary');
+  }, [pendingQuestions, snoozeQuestion, navigate]);
 
   if (!allStagesComplete) return null;
 
@@ -95,9 +121,9 @@ export function GapAnalysisPage() {
             We're checking for any gaps in your responses.
           </p>
         )}
-        {status === 'ready' && questions.length > 0 && (
+        {status === 'ready' && questions.length > 0 && overallAssessment && (
           <p className="text-sm text-gray-500">
-            {overallAssessment || 'Please review the questions below to strengthen your submission.'}
+            {overallAssessment}
           </p>
         )}
       </div>
@@ -108,12 +134,26 @@ export function GapAnalysisPage() {
       {/* Error state */}
       {status === 'error' && (
         <div className="rounded-lg border-2 border-red-200 bg-red-50 p-6 text-center">
-          <p className="text-sm font-medium text-red-800 mb-1">
-            Something went wrong
-          </p>
-          <p className="text-xs text-red-600 mb-4">
-            {errorMessage ?? 'Failed to analyze your submission. Please try again.'}
-          </p>
+          {!navigator.onLine ? (
+            <>
+              <WifiOff className="mx-auto h-6 w-6 text-red-400 mb-2" />
+              <p className="text-sm font-medium text-red-800 mb-1">
+                You appear to be offline
+              </p>
+              <p className="text-xs text-red-600 mb-4">
+                Please check your connection and try again.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-red-800 mb-1">
+                Something went wrong
+              </p>
+              <p className="text-xs text-red-600 mb-4">
+                {errorMessage ?? 'Failed to analyze your submission. Please try again.'}
+              </p>
+            </>
+          )}
           <button
             onClick={runAnalysis}
             className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white uppercase tracking-wider hover:bg-red-700 transition-colors"
@@ -127,6 +167,33 @@ export function GapAnalysisPage() {
       {/* Ready state with questions */}
       {status === 'ready' && questions.length > 0 && (
         <div className="space-y-6">
+          {/* Completeness bar */}
+          <CompletenessBar
+            score={completenessScore}
+            readinessLabel={readinessLabel}
+            description={getCompletenessDescription(completenessScore, pendingQuestions.length)}
+          />
+
+          {/* Static-only fallback notice */}
+          {isStaticFallback && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="rounded-lg border border-amber-200 bg-amber-50 p-4 flex items-start gap-3"
+            >
+              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">
+                  We couldn't reach our AI reviewer
+                </p>
+                <p className="text-xs text-amber-600 mt-0.5">
+                  Here are some questions that could strengthen your submission. You can try the full analysis again later.
+                </p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Reclassification banner */}
           {reclassification && (
             <ReclassificationBanner
@@ -136,21 +203,12 @@ export function GapAnalysisPage() {
             />
           )}
 
-          {/* Progress indicator */}
-          {resolvedCount > 0 && (
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <CheckCircle2 className="h-3.5 w-3.5 text-blue" />
-              <span>
-                {resolvedCount} of {questions.length} questions resolved
-              </span>
-            </div>
-          )}
-
-          {/* Question list */}
+          {/* Question list with snoozed section */}
           <GapQuestionList
             questions={questions}
             onAnswer={answerQuestion}
             onSnooze={snoozeQuestion}
+            onUnsnooze={unsnoozeQuestion}
           />
 
           {/* All resolved message */}
@@ -168,6 +226,11 @@ export function GapAnalysisPage() {
               <p className="text-xs text-gray-500 mt-1">
                 You're ready to generate your summary.
               </p>
+              {hasSnoozed && (
+                <p className="text-xs text-gray-400 mt-2">
+                  You have {snoozedQuestions.length} snoozed question{snoozedQuestions.length === 1 ? '' : 's'}. Answering them could improve your submission.
+                </p>
+              )}
             </motion.div>
           )}
         </div>
@@ -175,50 +238,102 @@ export function GapAnalysisPage() {
 
       {/* No gaps state */}
       {noGaps && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="rounded-lg border-2 border-blue/20 bg-blue/5 p-8 text-center"
-        >
-          <CheckCircle2 className="mx-auto h-8 w-8 text-blue mb-3" />
-          <p className="text-sm font-bold text-navy mb-1">
-            Looks great — no additional questions!
-          </p>
-          <p className="text-xs text-gray-500">
-            {overallAssessment || 'Your submission is thorough and ready for summary generation.'}
-          </p>
-        </motion.div>
-      )}
-
-      {/* Generate Summary button */}
-      {status === 'ready' && (allResolved || noGaps) && (
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => navigate('/summary')}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue px-8 py-3 text-sm font-medium text-white hover:bg-navy transition-colors uppercase tracking-wider"
+        <div className="space-y-6">
+          <CompletenessBar
+            score={completenessScore}
+            readinessLabel={readinessLabel}
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="rounded-lg border-2 border-green-200 bg-green-50 p-8 text-center"
           >
-            Generate Summary
-            <ArrowRight className="h-4 w-4" />
-          </button>
+            <CheckCircle2 className="mx-auto h-8 w-8 text-green-500 mb-3" />
+            <p className="text-sm font-bold text-navy mb-1">
+              Looks great -- no additional questions!
+            </p>
+            <p className="text-xs text-gray-500">
+              {overallAssessment || 'Your submission is thorough and ready for summary generation.'}
+            </p>
+          </motion.div>
         </div>
       )}
 
-      {/* Pending questions — show Generate Summary as secondary */}
-      {status === 'ready' && !allResolved && !noGaps && pendingCount > 0 && (
-        <div className="mt-8 text-center">
-          <p className="text-xs text-gray-400 mb-2">
-            Answer or snooze all questions to proceed
-          </p>
-          <button
-            disabled
-            className="inline-flex items-center gap-2 rounded-lg bg-gray-200 px-8 py-3 text-sm font-medium text-gray-400 cursor-not-allowed uppercase tracking-wider"
-          >
-            Generate Summary
-            <ArrowRight className="h-4 w-4" />
-          </button>
+      {/* Generate Summary / Re-check buttons */}
+      {status === 'ready' && (
+        <div className="mt-8 space-y-3 text-center">
+          {/* Re-check button (only after first run with answered questions) */}
+          {runCount > 0 && questions.some((q) => q.status === 'answered') && (
+            <button
+              onClick={runAnalysis}
+              className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-blue transition-colors uppercase tracking-wider"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Re-check submission
+            </button>
+          )}
+
+          {canProceed && (
+            <div>
+              <motion.button
+                onClick={() => navigate('/summary')}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue px-8 py-3 text-sm font-medium text-white hover:bg-navy transition-colors uppercase tracking-wider"
+                animate={
+                  allResolved || noGaps
+                    ? {
+                        boxShadow: [
+                          '0 0 0 0 rgba(0, 106, 184, 0)',
+                          '0 0 0 8px rgba(0, 106, 184, 0.15)',
+                          '0 0 0 0 rgba(0, 106, 184, 0)',
+                        ],
+                      }
+                    : {}
+                }
+                transition={{ duration: 1.5, repeat: 1 }}
+              >
+                Generate Summary
+                <ArrowRight className="h-4 w-4" />
+              </motion.button>
+            </div>
+          )}
         </div>
       )}
+
+      {/* Sticky skip bar — visible when there are unanswered questions */}
+      {status === 'ready' && hasPending && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-sm shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+          <div className="mx-auto max-w-2xl flex items-center justify-between gap-4 px-6 py-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+              <p className="text-xs text-gray-600 leading-snug">
+                {criticalPendingCount > 0 ? (
+                  <>
+                    <span className="font-semibold text-amber-700">
+                      {criticalPendingCount} critical question{criticalPendingCount !== 1 ? 's' : ''} remaining.
+                    </span>{' '}
+                    The more you answer, the better your summary will be.
+                  </>
+                ) : (
+                  <>
+                    Answering remaining questions will improve your summary, but you can skip for now.
+                  </>
+                )}
+              </p>
+            </div>
+            <button
+              onClick={handleSkipToSummary}
+              className="inline-flex items-center gap-1.5 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-xs font-medium text-gray-600 uppercase tracking-wider hover:border-blue hover:text-blue transition-colors shrink-0"
+            >
+              <SkipForward className="h-3 w-3" />
+              Skip to Summary
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Spacer for sticky bar */}
+      {status === 'ready' && hasPending && <div className="h-16" />}
     </motion.div>
   );
 }

@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, AlertTriangle, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronUp, AlertTriangle, Sparkles, MessageCircleQuestion } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { GapQuestion } from '@/types/gap-analysis';
+
+const PREVIEW_COUNT = 3;
+const OTHER_OPTION_ID = '__other__';
 
 interface UnansweredQuestionsPanelProps {
   questions: GapQuestion[];
@@ -13,9 +16,26 @@ export function UnansweredQuestionsPanel({
   questions,
   onAnswer,
 }: UnansweredQuestionsPanelProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [selectedOpts, setSelectedOpts] = useState<Record<string, string[]>>({});
+  const [otherTexts, setOtherTexts] = useState<Record<string, string>>({});
+
+  // Sort: critical first, then nice_to_have
+  const sorted = useMemo(
+    () =>
+      [...questions].sort((a, b) => {
+        if (a.priority === 'critical' && b.priority !== 'critical') return -1;
+        if (a.priority !== 'critical' && b.priority === 'critical') return 1;
+        return 0;
+      }),
+    [questions],
+  );
+
+  const criticalCount = sorted.filter((q) => q.priority === 'critical').length;
+  const visibleQuestions = showAll ? sorted : sorted.slice(0, PREVIEW_COUNT);
+  const hasMore = sorted.length > PREVIEW_COUNT;
 
   if (questions.length === 0) return null;
 
@@ -33,14 +53,38 @@ export function UnansweredQuestionsPanel({
     } else {
       const opts = selectedOpts[q.id];
       if (opts && opts.length > 0) {
-        onAnswer(q.id, opts.join(','), opts);
+        const otherText = otherTexts[q.id]?.trim() ?? '';
+        // Build label string: map option IDs to labels, use "Other: <text>" for the other option
+        const labels = opts
+          .map((id) => {
+            if (id === OTHER_OPTION_ID) return `Other: ${otherText}`;
+            return q.options?.find((o) => o.id === id)?.label ?? '';
+          })
+          .filter(Boolean)
+          .join(', ');
+        onAnswer(q.id, labels, opts);
         setSelectedOpts((prev) => {
+          const next = { ...prev };
+          delete next[q.id];
+          return next;
+        });
+        setOtherTexts((prev) => {
           const next = { ...prev };
           delete next[q.id];
           return next;
         });
       }
     }
+  };
+
+  const isOtherSelected = (questionId: string) =>
+    (selectedOpts[questionId] ?? []).includes(OTHER_OPTION_ID);
+
+  const canSubmitChoice = (q: GapQuestion) => {
+    const opts = selectedOpts[q.id];
+    if (!opts || opts.length === 0) return false;
+    if (opts.includes(OTHER_OPTION_ID) && !otherTexts[q.id]?.trim()) return false;
+    return true;
   };
 
   const handleOptionToggle = (questionId: string, optionId: string, inputType: string) => {
@@ -63,15 +107,25 @@ export function UnansweredQuestionsPanel({
     <div data-unanswered-panel className="rounded-lg border-2 border-gold/30 bg-gold/5 overflow-hidden">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-5 py-3 text-left"
+        className="w-full flex items-center justify-between px-5 py-3.5 text-left"
       >
-        <span className="text-xs font-bold text-navy uppercase tracking-wider">
-          Unanswered Questions ({questions.length})
-        </span>
+        <div className="flex items-center gap-2.5">
+          <MessageCircleQuestion className="h-4 w-4 text-gold shrink-0" />
+          <div>
+            <span className="text-xs font-bold text-navy uppercase tracking-wider">
+              {questions.length} Unanswered Question{questions.length !== 1 ? 's' : ''}
+            </span>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              {criticalCount > 0
+                ? `${criticalCount} critical — answering these will improve your summary`
+                : 'Answering these will improve your summary'}
+            </p>
+          </div>
+        </div>
         {isExpanded ? (
-          <ChevronUp className="h-4 w-4 text-gray-400" />
+          <ChevronUp className="h-4 w-4 text-gray-400 shrink-0" />
         ) : (
-          <ChevronDown className="h-4 w-4 text-gray-400" />
+          <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
         )}
       </button>
 
@@ -85,7 +139,7 @@ export function UnansweredQuestionsPanel({
             className="overflow-hidden"
           >
             <div className="px-5 pb-4 space-y-3">
-              {questions.map((q, i) => (
+              {visibleQuestions.map((q, i) => (
                 <div
                   key={q.id}
                   className="rounded-lg border border-gray-200 bg-white p-4"
@@ -168,12 +222,40 @@ export function UnansweredQuestionsPanel({
                             </button>
                           );
                         })}
+                        {/* Other (please specify) */}
+                        <button
+                          onClick={() =>
+                            handleOptionToggle(q.id, OTHER_OPTION_ID, q.inputType)
+                          }
+                          className={cn(
+                            'w-full text-left rounded-md border px-3 py-2 text-xs transition-colors',
+                            isOtherSelected(q.id)
+                              ? 'border-blue bg-blue/5 text-navy font-medium'
+                              : 'border-gray-200 text-gray-600 hover:border-blue/30',
+                          )}
+                        >
+                          Other (please specify)
+                        </button>
+                        {isOtherSelected(q.id) && (
+                          <input
+                            type="text"
+                            value={otherTexts[q.id] ?? ''}
+                            onChange={(e) =>
+                              setOtherTexts((prev) => ({
+                                ...prev,
+                                [q.id]: e.target.value,
+                              }))
+                            }
+                            placeholder="Please describe..."
+                            className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700 focus:outline-none focus:border-blue/40 focus:ring-1 focus:ring-blue/20"
+                          />
+                        )}
                         <button
                           onClick={() => handleSubmit(q)}
-                          disabled={!(selectedOpts[q.id]?.length)}
+                          disabled={!canSubmitChoice(q)}
                           className={cn(
                             'mt-1 rounded-md px-3 py-2 text-xs font-medium uppercase tracking-wider transition-colors',
-                            selectedOpts[q.id]?.length
+                            canSubmitChoice(q)
                               ? 'bg-navy text-white hover:bg-blue'
                               : 'bg-gray-100 text-gray-400 cursor-not-allowed',
                           )}
@@ -187,6 +269,18 @@ export function UnansweredQuestionsPanel({
                   </div>
                 </div>
               ))}
+
+              {/* Show all / Show fewer toggle */}
+              {hasMore && (
+                <button
+                  onClick={() => setShowAll(!showAll)}
+                  className="w-full text-center text-xs font-medium text-blue hover:text-navy transition-colors py-2 uppercase tracking-wider"
+                >
+                  {showAll
+                    ? 'Show fewer'
+                    : `Show all ${sorted.length} questions`}
+                </button>
+              )}
 
               <p className="text-[10px] text-gray-400 italic text-center pt-1">
                 Answering a question will regenerate your summary with the new

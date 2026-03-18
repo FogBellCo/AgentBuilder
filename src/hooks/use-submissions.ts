@@ -2,7 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchSubmissions } from '@/lib/api-client';
 import type { SubmissionListItem } from '@/lib/api-client';
 
-export function useSubmissions(email: string | null): {
+/**
+ * Fetch the current user's submissions.
+ * Auth is handled by the cookie — no email parameter needed.
+ * The `isAuthenticated` flag controls whether to fetch.
+ */
+export function useSubmissions(isAuthenticated: boolean): {
   submissions: SubmissionListItem[];
   isLoading: boolean;
   error: string | null;
@@ -18,7 +23,7 @@ export function useSubmissions(email: string | null): {
   }, []);
 
   useEffect(() => {
-    if (!email) {
+    if (!isAuthenticated) {
       setSubmissions([]);
       return;
     }
@@ -27,10 +32,10 @@ export function useSubmissions(email: string | null): {
     setIsLoading(true);
     setError(null);
 
-    fetchSubmissions(email)
+    fetchSubmissions()
       .then((res) => {
         if (!cancelled) {
-          setSubmissions(res.submissions);
+          setSubmissions(res.data);
         }
       })
       .catch((err: Error) => {
@@ -47,7 +52,7 @@ export function useSubmissions(email: string | null): {
     return () => {
       cancelled = true;
     };
-  }, [email, fetchKey]);
+  }, [isAuthenticated, fetchKey]);
 
   return { submissions, isLoading, error, refetch };
 }

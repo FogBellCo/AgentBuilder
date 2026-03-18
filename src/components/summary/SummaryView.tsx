@@ -11,18 +11,66 @@ import {
   shareSummary,
   copyToClipboard,
 } from '@/lib/summary-formatter';
-import type { Stage } from '@/types/decision-tree';
+import type { Stage, ConversationalAnswers } from '@/types/decision-tree';
 
 const stageOrder: Stage[] = ['GATHER', 'REFINE', 'PRESENT'];
+
+// Q-M1 options
+const onBehalfOptions = [
+  { value: 'self' as const, label: 'For myself' },
+  { value: 'other' as const, label: 'On behalf of someone else' },
+];
+
+// Q-M2 options
+const tritonGPTOptions = [
+  { value: 'use_it', label: 'Yes, I already use it' },
+  { value: 'heard_of', label: "I've heard of it" },
+  { value: 'no', label: "No, what's that?" },
+];
 
 export function SummaryView() {
   const store = useSessionStore();
   const navigate = useNavigate();
-  const { stages, projectIdea, gatherDetails, refineDetails, presentDetails } =
-    store;
+  const {
+    stages,
+    projectIdea,
+    gatherDetails,
+    refineDetails,
+    presentDetails,
+    conversationalAnswers,
+    stageAnswers,
+    setConversationalAnswer,
+  } = store;
   const [copied, setCopied] = useState(false);
 
+  // Local state for metadata fields
+  const [onBehalf, setOnBehalf] = useState<ConversationalAnswers['onBehalf']>(
+    conversationalAnswers.onBehalf,
+  );
+  const [onBehalfName, setOnBehalfName] = useState(conversationalAnswers.onBehalfName);
+  const [tritonGPT, setTritonGPT] = useState(conversationalAnswers.tritonGPT);
+
   const allComplete = stageOrder.every((s) => stages[s].status === 'complete');
+
+  // Save metadata to store when values change
+  const handleOnBehalfChange = (value: ConversationalAnswers['onBehalf']) => {
+    setOnBehalf(value);
+    setConversationalAnswer('onBehalf', value);
+    if (value !== 'other') {
+      setOnBehalfName('');
+      setConversationalAnswer('onBehalfName', '');
+    }
+  };
+
+  const handleOnBehalfNameChange = (value: string) => {
+    setOnBehalfName(value);
+    setConversationalAnswer('onBehalfName', value);
+  };
+
+  const handleTritonGPTChange = (value: string) => {
+    setTritonGPT(value);
+    setConversationalAnswer('tritonGPT', value);
+  };
 
   const summaryState = {
     sessionId: store.sessionId,
@@ -33,6 +81,8 @@ export function SummaryView() {
     refineDetails,
     presentResult: stages.PRESENT.result,
     presentDetails,
+    conversationalAnswers,
+    stageAnswers,
   };
 
   const handleDownload = () => {
@@ -94,8 +144,73 @@ export function SummaryView() {
               <p className="text-sm text-gray-700 leading-relaxed">
                 A member of the TritonAI team will reach out to you with next steps
                 based on your responses. You'll receive a detailed email with
-                recommendations tailored to your project.
+                recommendations tailored to your request.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Before you submit — metadata questions */}
+      {allComplete && (
+        <div className="mb-6 rounded-lg border-2 border-gray-200 p-6 space-y-5">
+          <h3 className="text-sm font-bold text-navy uppercase tracking-wider">
+            Before you submit
+          </h3>
+
+          {/* Q-M1: On behalf */}
+          <div>
+            <label className="block text-xs font-bold text-navy uppercase tracking-wider mb-2">
+              Are you submitting this for yourself or someone else?
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {onBehalfOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleOnBehalfChange(onBehalf === opt.value ? '' : opt.value)}
+                  className={`rounded-lg border-2 px-4 py-2 text-xs font-medium uppercase tracking-wider transition-colors ${
+                    onBehalf === opt.value
+                      ? 'border-blue bg-blue/5 text-blue'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {onBehalf === 'other' && (
+              <div className="mt-3">
+                <input
+                  type="text"
+                  value={onBehalfName}
+                  onChange={(e) => handleOnBehalfNameChange(e.target.value)}
+                  placeholder="Their name and role"
+                  maxLength={200}
+                  className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder-gray-400 focus:border-blue focus:outline-none transition-colors"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Q-M2: TritonGPT */}
+          <div>
+            <label className="block text-xs font-bold text-navy uppercase tracking-wider mb-2">
+              Have you heard of TritonGPT?
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {tritonGPTOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleTritonGPTChange(tritonGPT === opt.value ? '' : opt.value)}
+                  className={`rounded-lg border-2 px-4 py-2 text-xs font-medium uppercase tracking-wider transition-colors ${
+                    tritonGPT === opt.value
+                      ? 'border-blue bg-blue/5 text-blue'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>

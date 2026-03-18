@@ -9,9 +9,9 @@ import type { GatherDetails, ProtectionLevel } from '@/types/decision-tree';
 
 const dataTypeOptions = [
   'Spreadsheet / CSV',
-  'Database / SQL',
+  'Database',
   'Documents / PDFs',
-  'API / Web Service',
+  'Live data feed or connected system',
   'Images / Media',
   'Other',
 ];
@@ -173,7 +173,7 @@ export function GatherDetailForm({ protectionLevel }: GatherDetailFormProps) {
         {/* Data Type (multi-select) */}
         <div>
           <label className="block text-xs font-bold text-navy uppercase tracking-wider mb-1">
-            Data Type
+            What format is your data in?
           </label>
           <p className="text-xs text-gray-400 mb-2">Select all that apply</p>
           <div className="flex flex-wrap gap-2">
@@ -199,7 +199,7 @@ export function GatherDetailForm({ protectionLevel }: GatherDetailFormProps) {
             htmlFor="source-system"
             className="block text-xs font-bold text-navy uppercase tracking-wider mb-2"
           >
-            Source System(s) <span className="text-gray-400 font-normal">(optional)</span>
+            Where does the data live? <span className="text-gray-400 font-normal">(optional)</span>
           </label>
           <input
             id="source-system"

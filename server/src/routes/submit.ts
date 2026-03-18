@@ -1,16 +1,14 @@
 import { Hono } from 'hono';
 import { forwardToWebhook } from '../lib/webhook.js';
-import { upsertSubmission } from '../lib/db-operations.js';
 
 const submitRoute = new Hono();
 
 /**
  * POST /api/submit
  *
- * Accepts a finalized intake payload, logs it, and forwards it
- * to the TritonAI webhook.
- *
- * TODO: Store submissions in SQLite for persistence and audit trail.
+ * Legacy endpoint — accepts a finalized intake payload and forwards it
+ * to the TritonAI webhook. The new auth-based flow uses
+ * POST /api/submissions/:id/submit instead.
  */
 submitRoute.post('/', async (c) => {
   try {
@@ -20,21 +18,7 @@ submitRoute.post('/', async (c) => {
       return c.json({ error: 'Request body is required' }, 400);
     }
 
-    // Log submission to console (placeholder for database storage)
-    console.log(
-      '[submit] Received submission:',
-      JSON.stringify(body, null, 2)
-    );
-
-    // Persist to database
-    try {
-      const sessionId = body.sessionId || crypto.randomUUID();
-      const title = body.projectIdea?.title || '';
-      const email = body.email || 'unknown@ucsd.edu';
-      upsertSubmission(sessionId, email, title, 'submitted', JSON.stringify(body));
-    } catch (dbError) {
-      console.warn('[submit] DB persistence failed:', dbError);
-    }
+    console.log('[submit] Received submission via legacy endpoint');
 
     // Forward to webhook
     const webhookResult = await forwardToWebhook(body);
@@ -45,8 +29,6 @@ submitRoute.post('/', async (c) => {
         webhookResult.error
       );
 
-      // Still return success to the client — the submission was received.
-      // The webhook failure is logged but not blocking.
       return c.json({
         success: true,
         webhookStatus: 'failed',

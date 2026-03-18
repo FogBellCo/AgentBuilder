@@ -92,11 +92,10 @@ export function RefineDetailForm({ initialTask, initialDataPrep }: RefineDetailF
 
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-navy mb-2">
-          Detail Your Refinements
+          Tell Us More About Your AI Tasks
         </h2>
         <p className="text-sm text-gray-500">
-          Add details for each AI task you want to perform. You can add multiple
-          refinement passes if needed.
+          Add details for each thing you want AI to do. You can add more than one.
         </p>
       </div>
 
@@ -108,7 +107,7 @@ export function RefineDetailForm({ initialTask, initialDataPrep }: RefineDetailF
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xs font-bold text-navy uppercase tracking-wider">
-                Refinement {index + 1}
+                AI Task {index + 1}
               </h3>
               {refinements.length > 1 && (
                 <button
@@ -197,7 +196,7 @@ export function RefineDetailForm({ initialTask, initialDataPrep }: RefineDetailF
         >
           <span className="flex items-center gap-2 text-xs font-medium text-gray-500 group-hover:text-blue uppercase tracking-wider">
             <Plus className="h-4 w-4" />
-            Add Another Refinement
+            Add Another AI Task
           </span>
           <span className="text-[11px] text-gray-400 group-hover:text-blue/70">
             Want AI to do more than one thing? Add another task here.

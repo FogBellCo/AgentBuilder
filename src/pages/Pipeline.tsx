@@ -70,7 +70,7 @@ export function Pipeline() {
             Answer three quick sections so we can recommend the right AI tool for you. Click a section below to get started.
           </p>
           <p className="text-xs text-blue font-medium mt-2">
-            Project: {projectIdea.title}
+            Request: {projectIdea.title}
           </p>
         </div>
 

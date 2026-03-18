@@ -1,41 +1,43 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useUserEmail } from '@/hooks/use-user-email';
+import { useAuth } from '@/hooks/use-auth';
 import { useSubmissions } from '@/hooks/use-submissions';
 import { useSessionStore } from '@/store/session-store';
-import { fetchSubmission } from '@/lib/api-client';
+import { loadSubmission } from '@/lib/submission-loader';
 import { SubmissionCard } from '@/components/landing/SubmissionCard';
 
 export function SubmissionsList() {
-  const { email } = useUserEmail();
-  const { submissions, isLoading } = useSubmissions(email);
+  const { isAuthenticated } = useAuth();
+  const { submissions, isLoading } = useSubmissions(isAuthenticated);
   const navigate = useNavigate();
 
   const handleSelect = async (id: string) => {
-    const data = await fetchSubmission(id);
-    const snapshot = data.sessionState as Record<string, unknown>;
-    useSessionStore.getState().loadSession(snapshot);
+    try {
+      const { status } = await loadSubmission(id);
 
-    if (data.status.toLowerCase() === 'submitted') {
-      navigate('/summary');
-    } else {
-      const stages = snapshot.stages as Record<
-        string,
-        { status: string }
-      > | undefined;
-      if (stages?.PRESENT?.status === 'complete') {
+      if (status === 'submitted' || status === 'in_review' || status === 'approved' || status === 'complete') {
         navigate('/summary');
-      } else if (stages?.REFINE?.status === 'complete') {
-        navigate('/stage/PRESENT');
-      } else if (stages?.GATHER?.status === 'complete') {
-        navigate('/stage/REFINE');
-      } else if (snapshot.projectIdea) {
-        navigate('/pipeline');
       } else {
-        navigate('/describe');
+        const state = useSessionStore.getState();
+        const stages = state.stages;
+        if (stages?.PRESENT?.status === 'complete') {
+          navigate('/summary');
+        } else if (stages?.REFINE?.status === 'complete') {
+          navigate('/stage/PRESENT');
+        } else if (stages?.GATHER?.status === 'complete') {
+          navigate('/stage/REFINE');
+        } else if (state.projectIdea) {
+          navigate('/pipeline');
+        } else {
+          navigate('/describe');
+        }
       }
+    } catch (err) {
+      console.error('[SubmissionsList] Failed to load submission:', err);
     }
   };
+
+  if (!isAuthenticated) return null;
 
   if (isLoading) {
     return (

@@ -120,14 +120,14 @@ export function StagesSidebar() {
       if (stage === 'GATHER') {
         items.push({
           id: 'gather-details',
-          label: 'Data details',
+          label: 'More about your data',
           status: gatherDetails ? 'answered' : 'current',
         });
       }
       if (stage === 'REFINE') {
         items.push({
           id: 'refine-details',
-          label: 'Refinement details',
+          label: 'More about your tasks',
           status: refineDetails ? 'answered' : 'current',
         });
       }
@@ -161,7 +161,7 @@ export function StagesSidebar() {
       });
       items.push({
         id: 'present-feasibility',
-        label: 'Review feasibility',
+        label: 'Compatibility check',
         status: presentDetails ? 'answered' : 'current',
       });
     }
@@ -230,7 +230,7 @@ export function StagesSidebar() {
             : <Circle className="h-3.5 w-3.5 text-gray-300 shrink-0" />
           }
           <Lightbulb className={cn('h-3.5 w-3.5 shrink-0', path === '/describe' ? 'text-blue' : 'text-gray-400')} />
-          <span className="text-xs font-semibold uppercase tracking-wider">Your Idea</span>
+          <span className="text-xs font-semibold uppercase tracking-wider">Your Request</span>
         </button>
 
         {/* Stage sections */}

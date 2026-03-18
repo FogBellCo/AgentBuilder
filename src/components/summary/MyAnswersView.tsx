@@ -24,13 +24,6 @@ interface MyAnswersViewProps {
   gapQuestions: GapQuestion[];
 }
 
-const timelineLabels: Record<string, string> = {
-  exploring: 'Just exploring',
-  this_quarter: 'This quarter',
-  this_month: 'This month',
-  immediate: 'Immediate need',
-};
-
 const taskLabels: Record<string, string> = {
   summarize: 'Summarize or extract key points',
   analyze: 'Analyze trends and patterns',
@@ -89,39 +82,21 @@ export function MyAnswersView({
     <div className="space-y-4">
       {/* Project Idea Card */}
       {projectIdea && (
-        <AnswerCard title="Project Idea">
+        <AnswerCard title="Your Request">
           {projectIdea.title && <DetailRow label="Title" value={projectIdea.title} />}
           {projectIdea.description && (
             <DetailRow label="Description" value={projectIdea.description} />
           )}
           {projectIdea.domain && <DetailRow label="Domain" value={projectIdea.domain} />}
-          {projectIdea.timeline && (
-            <DetailRow
-              label="Timeline"
-              value={timelineLabels[projectIdea.timeline] ?? projectIdea.timeline}
-            />
-          )}
-          {projectIdea.projectGoal && (
-            <DetailRow label="Goal" value={projectIdea.projectGoal} />
-          )}
-          {projectIdea.existingStatus && (
-            <DetailRow label="Current Status" value={projectIdea.existingStatus} />
-          )}
           {projectIdea.currentProcess && (
             <DetailRow label="How It's Done Today" value={projectIdea.currentProcess} />
-          )}
-          {projectIdea.projectComplexity && (
-            <DetailRow label="Complexity" value={projectIdea.projectComplexity} />
-          )}
-          {projectIdea.preferredTool && (
-            <DetailRow label="Preferred Tool" value={projectIdea.preferredTool} />
           )}
         </AnswerCard>
       )}
 
       {/* GATHER Card */}
       {gatherResult && (
-        <AnswerCard title="GATHER — Data Classification">
+        <AnswerCard title="Your Data">
           <DecisionPathDisplay
             stage="GATHER"
             stageAnswers={gatherResult.answers}
@@ -145,10 +120,10 @@ export function MyAnswersView({
 
           <div className="mt-2 space-y-1.5 border-t border-gray-100 pt-3">
             {gatherDetails && gatherDetails.dataType.length > 0 && (
-              <DetailRow label="Data Type" value={gatherDetails.dataType.join(', ')} />
+              <DetailRow label="Data Format" value={gatherDetails.dataType.join(', ')} />
             )}
             {gatherDetails?.sourceSystem && (
-              <DetailRow label="Source System" value={gatherDetails.sourceSystem} />
+              <DetailRow label="Where It Lives" value={gatherDetails.sourceSystem} />
             )}
             {gatherDetails?.dataSize && (
               <DetailRow label="Data Size" value={gatherDetails.dataSize} />
@@ -160,7 +135,7 @@ export function MyAnswersView({
                 gatherDetails.regulatoryContext[0] === 'none'
               ) && (
                 <DetailRow
-                  label="Regulatory Context"
+                  label="Special Rules"
                   value={gatherDetails.regulatoryContext.join(', ')}
                 />
               )}
@@ -173,7 +148,7 @@ export function MyAnswersView({
 
       {/* REFINE Card */}
       {refineResult && (
-        <AnswerCard title="REFINE — AI Processing Plan">
+        <AnswerCard title="Your AI Tasks">
           <DecisionPathDisplay
             stage="REFINE"
             stageAnswers={refineResult.answers}
@@ -183,7 +158,7 @@ export function MyAnswersView({
             <div className="mt-2 space-y-2 border-t border-gray-100 pt-3">
               {refineDetails.refinements.length > 0 && (
                 <div>
-                  <span className="text-xs font-medium text-navy">Refinements:</span>
+                  <span className="text-xs font-medium text-navy">AI Tasks:</span>
                   {refineDetails.refinements.map((r, i) => (
                     <div
                       key={r.id}
@@ -229,7 +204,7 @@ export function MyAnswersView({
 
       {/* PRESENT Card */}
       {presentResult && (
-        <AnswerCard title="PRESENT — Output Deliverables">
+        <AnswerCard title="Your Results">
           <DecisionPathDisplay
             stage="PRESENT"
             stageAnswers={presentResult.answers}
@@ -259,7 +234,7 @@ export function MyAnswersView({
                         <p className="text-gray-500 mt-0.5">{o.description}</p>
                       )}
                       <p className="text-gray-400 mt-0.5">
-                        Feasibility: {fConfig.label}
+                        Status: {fConfig.label}
                       </p>
                     </div>
                   </div>
@@ -272,7 +247,7 @@ export function MyAnswersView({
 
       {/* Gap Analysis Answers Card */}
       {answeredGapQuestions.length > 0 && (
-        <AnswerCard title="Gap Analysis Answers">
+        <AnswerCard title="Follow-up Answers">
           <div className="space-y-3">
             {answeredGapQuestions.map((q) => (
               <div key={q.id} className="text-xs">

@@ -148,7 +148,7 @@ export const refineTree: DecisionNode[] = [
     id: 'refine-audience-warning',
     stage: 'REFINE',
     question: 'Heads up: sharing with a wider audience may change your data requirements.',
-    description: 'If your original data is Internal (P2) or higher, the AI output may still carry those restrictions. The output might need to be de-identified or access-controlled.',
+    description: 'If your original data requires login access or special permissions, the AI output may still carry those restrictions. We may need to limit who can see the results or remove identifying details first.',
     inputType: 'confirmation',
     options: [
       {
@@ -168,15 +168,15 @@ export const refineTree: DecisionNode[] = [
   {
     id: 'refine-confirm',
     stage: 'REFINE',
-    question: 'Great — let\'s add some detail to your refinement plan.',
-    description: 'You\'ve outlined the AI tasks, data preparation, and audience. Next, you can fine-tune each task with specific instructions.',
+    question: 'Great — let\'s add a few more details about what you need.',
+    description: 'You\'ve told us what AI should do, how to prepare the data, and who will see the results. Next, you can add more specifics.',
     inputType: 'confirmation',
     options: [
       {
         id: 'confirm-refine',
         label: 'Continue to add details',
         icon: 'ArrowRight',
-        nextNodeId: null,
+        nextNodeId: 'refine-walkthrough',
       },
       {
         id: 'redo-refine',
@@ -184,6 +184,44 @@ export const refineTree: DecisionNode[] = [
         icon: 'ArrowLeft',
         nextNodeId: 'refine-task',
       },
+    ],
+  },
+  {
+    id: 'refine-walkthrough',
+    stage: 'REFINE',
+    question: 'Walk me through a typical example of how you do this today',
+    description: 'Start from when you first get the request or task. What\'s step one? Then what?',
+    inputType: 'free_text',
+    placeholder: 'e.g., First I get an email with a spreadsheet attached. I open it in Excel, scan for errors, copy the data into our system...',
+    maxLength: 1500,
+    skippable: true,
+    nextNodeId: 'refine-result-audience',
+    options: [],
+  },
+  {
+    id: 'refine-result-audience',
+    stage: 'REFINE',
+    question: 'Who uses the result of this work?',
+    description: 'This helps us understand who the AI output needs to serve.',
+    inputType: 'multi_choice',
+    options: [
+      { id: 'my_team', label: 'My team', icon: 'Users', nextNodeId: 'refine-approval' },
+      { id: 'other_depts', label: 'Other departments', icon: 'Building2', nextNodeId: 'refine-approval' },
+      { id: 'students', label: 'Students', icon: 'GraduationCap', nextNodeId: 'refine-approval' },
+      { id: 'leadership', label: 'Leadership', icon: 'Crown', nextNodeId: 'refine-approval' },
+      { id: 'external', label: 'External partners', icon: 'Globe', nextNodeId: 'refine-approval' },
+    ],
+  },
+  {
+    id: 'refine-approval',
+    stage: 'REFINE',
+    question: 'Does anyone need to review or approve the result before it goes out?',
+    description: 'Some outputs need a human check before they\'re shared. That\'s totally fine -- we just need to plan for it.',
+    inputType: 'single_choice',
+    options: [
+      { id: 'always', label: 'Yes, always', icon: 'ShieldCheck', nextNodeId: null },
+      { id: 'sometimes', label: 'Sometimes, depends on the situation', icon: 'Scale', nextNodeId: null },
+      { id: 'never', label: 'No, I just send it', icon: 'Send', nextNodeId: null },
     ],
   },
 ];

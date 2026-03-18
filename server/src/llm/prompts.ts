@@ -137,3 +137,181 @@ ${JSON.stringify(gapAnswers, null, 2)}
 
   return prompt;
 }
+
+// --- Spec 02: User-Facing Summary Prompts ---
+
+const USER_SUMMARY_SYSTEM_PROMPT = `You are writing a friendly, warm summary for a non-technical university staff member
+who just completed an AI project intake form. They should read this and think "yes,
+that's exactly what I meant."
+
+Rules:
+- Write in second person ("Your team...", "You want...")
+- No jargon: never say "protection level", "P1/P2/P3/P4", "desirability",
+  "viability", "feasibility", "process overview", or any internal UCSD terms
+- Keep it conversational — like a smart colleague summarizing what you told them
+- Be specific: use the actual numbers, system names, and team details they provided
+- Each section should be 2-4 sentences
+- If data is missing for a section, write a shorter section that still feels complete
+  (don't say "no information provided")
+
+Output a JSON object with exactly 4 keys:
+- yourProject: A 2-3 sentence narrative about their project
+- theData: A short paragraph about data sources, sensitivity, and access
+- whatAIWouldHandle: A plain-language description of AI processing tasks
+- howYoudSeeResults: Description of output formats in friendly language`;
+
+export function buildUserSummarySystemPrompt(): string {
+  return USER_SUMMARY_SYSTEM_PROMPT;
+}
+
+export function buildUserSummaryUserPrompt(
+  intakePayload: unknown,
+  gapAnswers: GapQuestion[]
+): string {
+  let prompt = `Here is the user's intake submission:
+
+<submission>
+${JSON.stringify(intakePayload, null, 2)}
+</submission>
+
+`;
+
+  if (gapAnswers.length > 0) {
+    prompt += `Here are the gap analysis follow-up answers:
+
+<gap_answers>
+${JSON.stringify(gapAnswers, null, 2)}
+</gap_answers>
+
+`;
+  }
+
+  prompt += `Generate the 4 user-facing summary sections. Each should be 2-4 conversational sentences.`;
+
+  return prompt;
+}
+
+// --- Spec 02: OSI-Facing Summary Prompts ---
+
+const OSI_SUMMARY_SYSTEM_PROMPT = `You are a technical writer for UCSD's TritonAI team. You generate structured intake
+summaries that match the UCSD AI intake template format.
+
+Rules:
+- Write in third person professional voice
+- Be thorough and specific — the review team uses this to prioritize and plan
+- For Process Overview fields, synthesize across all provided data
+- For Context/Challenge/Request, write full narrative paragraphs (2-3 each)
+- Reference specific systems, data volumes, and timelines where available
+- If gap analysis answers provide additional detail beyond the intake form, integrate
+  that information
+- Flag uncertainties explicitly: "The submitter did not specify X; follow-up recommended"
+
+Output a JSON object with these keys:
+- processOverview: { purpose: string, description: string, keyPoints: string[], potentialImpact: string[], questionsAndConsiderations: string[] }
+- context: string (2-3 paragraphs about current state)
+- challenge: string (2-3 paragraphs about pain points)
+- request: string (2-3 paragraphs about what they want built)
+- impactBullets: string[] (2-3 impact bullets for savings section)`;
+
+export function buildOSISummarySystemPrompt(): string {
+  return OSI_SUMMARY_SYSTEM_PROMPT;
+}
+
+export function buildOSISummaryUserPrompt(
+  intakePayload: unknown,
+  gapAnswers: GapQuestion[],
+  calculatedFields: unknown
+): string {
+  let prompt = `Here is the user's intake submission:
+
+<submission>
+${JSON.stringify(intakePayload, null, 2)}
+</submission>
+
+Here are the deterministically calculated UCSD fields (DO NOT change these values):
+
+<calculated_fields>
+${JSON.stringify(calculatedFields, null, 2)}
+</calculated_fields>
+
+`;
+
+  if (gapAnswers.length > 0) {
+    prompt += `Here are the gap analysis follow-up answers:
+
+<gap_answers>
+${JSON.stringify(gapAnswers, null, 2)}
+</gap_answers>
+
+`;
+  }
+
+  prompt += `Generate the OSI summary narrative sections. The Process Overview purpose should be 1-2 sentences. The description should be 1-2 paragraphs. Key points, potential impact, and questions & considerations should each be 3-5 bullets. Context, Challenge, and Request should each be 2-3 paragraphs.`;
+
+  return prompt;
+}
+
+// --- Spec 02: Claude Code Prompt Bundle Prompts ---
+
+const PROMPT_BUNDLE_SYSTEM_PROMPT = `You are generating a Claude Code project prompt bundle — a structured markdown document
+that a developer will paste into an AI coding assistant to scaffold this project.
+
+Rules:
+- Be technically precise
+- Include concrete implementation guidance, not just requirements
+- Reference UC data classification constraints specifically
+- For suggested architecture, name actual patterns (RAG, ETL, event-driven) and
+  explain briefly why
+- Acceptance criteria should be testable (Given/When/Then or checkbox format)
+- Out of scope should be inferred from what was NOT selected
+- Implementation notes should address UCSD-specific gotchas (SSO, TritonGPT, etc.)
+
+Output a JSON object with these keys:
+- businessContext: string (2-3 paragraph narrative for developers)
+- functionalRequirements: string (bulleted markdown list)
+- outOfScope: string (bulleted markdown list, 3-6 items)
+- suggestedArchitecture: string (markdown with component list)
+- acceptanceCriteria: string (4-6 criteria in checkbox format)
+- implementationNotes: string (3-5 practical notes)`;
+
+export function buildPromptBundleSystemPrompt(): string {
+  return PROMPT_BUNDLE_SYSTEM_PROMPT;
+}
+
+export function buildPromptBundleUserPrompt(
+  intakePayload: unknown,
+  gapAnswers: GapQuestion[],
+  osiSummary: unknown
+): string {
+  let prompt = `Here is the user's intake submission:
+
+<submission>
+${JSON.stringify(intakePayload, null, 2)}
+</submission>
+
+`;
+
+  if (osiSummary) {
+    prompt += `Here is the OSI intake summary for reference:
+
+<osi_summary>
+${JSON.stringify(osiSummary, null, 2)}
+</osi_summary>
+
+`;
+  }
+
+  if (gapAnswers.length > 0) {
+    prompt += `Here are the gap analysis follow-up answers:
+
+<gap_answers>
+${JSON.stringify(gapAnswers, null, 2)}
+</gap_answers>
+
+`;
+  }
+
+  prompt += `Generate the AI-authored sections of the Claude Code prompt bundle.`;
+
+  return prompt;
+}

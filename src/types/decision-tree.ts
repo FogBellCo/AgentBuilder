@@ -25,9 +25,14 @@ export interface DecisionNode {
   stage: Stage;
   question: string;
   description?: string;
-  inputType: 'single_choice' | 'multi_choice' | 'confirmation';
+  inputType: 'single_choice' | 'multi_choice' | 'confirmation' | 'free_text';
   options: DecisionOption[];
   classifiesProtectionLevel?: boolean;
+  // Fields for free_text nodes:
+  placeholder?: string;
+  maxLength?: number;
+  skippable?: boolean;
+  nextNodeId?: string | null; // For free_text nodes: where to go after text is submitted
 }
 
 export interface DecisionOption {
@@ -92,12 +97,7 @@ export interface ProjectIdea {
   title: string;
   description: string;
   domain: string;
-  timeline: string;
-  existingStatus: string;
-  projectGoal: string;
   currentProcess: string;
-  projectComplexity: string;
-  preferredTool: string;
 }
 
 export interface GatherDetails {
@@ -156,4 +156,51 @@ export interface IntakePayload {
     }>;
   };
   nextSteps: string[];
+  conversationalAnswers?: ConversationalAnswers;
+  derivedValues?: DerivedIntakeValues;
+}
+
+/** Answers to the new conversational questions woven throughout the wizard */
+export interface ConversationalAnswers {
+  // Describe stage -- team & context
+  teamWho: string;                // Q-D1
+  whyNow: string[];               // Q-D2 (multi-select IDs)
+  consequences: string;           // Q-D3
+
+  // Describe stage -- workload
+  workloadFrequency: string;      // Q-W1 (option ID)
+  workloadDuration: string;       // Q-W2 (option ID)
+  workloadPeople: string;         // Q-W3 (option ID)
+  workloadPainPoint: string;      // Q-W4
+
+  // Describe stage -- context
+  currentTools: string[];         // Q-C1 (multi-select IDs)
+  currentToolsOther: string;      // Q-C1 "Other" free text
+  magicWand: string;              // Q-C2
+
+  // Metadata (summary page)
+  onBehalf: 'self' | 'other' | ''; // Q-M1 selection
+  onBehalfName: string;            // Q-M1 conditional text
+  tritonGPT: string;              // Q-M2 (option ID)
+}
+
+/** Auto-calculated values derived from conversational answers */
+export interface DerivedIntakeValues {
+  // Savings
+  monthlyHoursTotal: number;
+  monthlySavings: number;
+  annualSavings: number;
+  expectedVolumePerYear: number;
+  hoursPerInstance: number;
+  savingsPerInstance: number;
+
+  // UCSD format fields
+  customerSize: string;     // "One department" | "Multiple departments" | "Multiple VC areas" | "Campus"
+  customerNeed: string;     // "Low" | "Medium" | "High"
+  processVolume: string;    // "<100 per month" | "100-1000 per month" | ">1000 per month"
+  savingsPerCycle: string;  // "<15 min" | "15 min - 1 hour" | ">1 hour"
+  savingsPerMonth: string;  // "<1 hour" | "1 - 200 hours" | ">200 hours"
+  alignment: string;        // "Add-on to existing TGPT tool" | "New TGPT tool" | "New tool (non-TGPT)"
+  dataAvailability: string; // "Readily available" | "Requires new integration" | "Requires new data source"
+  complexity: string;       // "Low" | "Medium" | "High"
 }

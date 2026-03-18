@@ -16,12 +16,7 @@ export const exampleSubmissions: string[] = [
     "title": "AI Agent to Support Transaction Approvers",
     "description": "Campus users have a painpoint around managing approvals across disparate systems (Oracle, Concur, Kuali, ServiceNow, Ecotime, UCPath). An AI agent where users can ask 'show my pending approvals' and get live results from source systems via APIs.",
     "domain": "Business & Financial Services",
-    "timeline": "6-12 months",
-    "existingStatus": "No — new project",
-    "projectGoal": "Consolidate approval workflows into a single AI-powered interface",
-    "currentProcess": "Users must log into each system separately to check pending approvals. No unified view exists.",
-    "projectComplexity": "High — multiple system integrations",
-    "preferredTool": "TritonGPT"
+    "currentProcess": "Users must log into each system separately to check pending approvals. No unified view exists."
   },
   "gather": {
     "protectionLevel": "P2",
@@ -63,12 +58,7 @@ export const exampleSubmissions: string[] = [
     "title": "AI-Powered Chatbot for Nano3 Cleanroom Facility",
     "description": "The Nano3 cleanroom facility at UCSD receives hundreds of repetitive questions about equipment availability, training requirements, and scheduling. We want an AI chatbot embedded on our website that can answer FAQs, guide new users through the onboarding process, and direct complex questions to staff.",
     "domain": "Research & Facilities",
-    "timeline": "3-6 months",
-    "existingStatus": "No — new project",
-    "projectGoal": "Reduce staff time spent answering repetitive questions by 60% and improve user onboarding experience",
-    "currentProcess": "Users email facility staff or browse a static FAQ page. Staff manually respond to each inquiry, often with the same answers.",
-    "projectComplexity": "Medium — single data source, standard chatbot",
-    "preferredTool": "TritonGPT"
+    "currentProcess": "Users email facility staff or browse a static FAQ page. Staff manually respond to each inquiry, often with the same answers."
   },
   "gather": {
     "protectionLevel": "P1",
@@ -110,12 +100,7 @@ export const exampleSubmissions: string[] = [
     "title": "AI-Driven Mentor Matching for Graduate Students",
     "description": "Graduate students often struggle to find faculty mentors whose research interests align with theirs. We want an AI solution that analyzes student research interests, faculty publications, and lab openings to suggest optimal mentor-mentee matches across departments.",
     "domain": "Academic Affairs & Student Services",
-    "timeline": "6-12 months",
-    "existingStatus": "No — new project",
-    "projectGoal": "Improve mentor-mentee matching quality and reduce time-to-match from weeks to minutes",
-    "currentProcess": "Students browse department websites, attend info sessions, and cold-email faculty. Success depends heavily on personal networks and luck.",
-    "projectComplexity": "Medium — NLP matching algorithm, multiple data sources",
-    "preferredTool": "Custom solution"
+    "currentProcess": "Students browse department websites, attend info sessions, and cold-email faculty. Success depends heavily on personal networks and luck."
   },
   "gather": {
     "protectionLevel": "P2",

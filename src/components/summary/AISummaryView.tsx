@@ -3,29 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, AlertTriangle, Shield } from 'lucide-react';
 import { useSessionStore } from '@/store/session-store';
-import { useAISummary } from '@/hooks/use-ai-summary';
-import { buildIntakeJson, downloadJson, shareSummary, copyToClipboard } from '@/lib/summary-formatter';
+import { useUserSummary } from '@/hooks/use-user-summary';
+import { buildIntakeJson, shareSummary } from '@/lib/summary-formatter';
+import { postSubmit } from '@/lib/api-client';
 import { protectionLevels } from '@/data/protection-levels';
-import type { Stage, IntakePayload } from '@/types/decision-tree';
+import type { Stage, IntakePayload, ProtectionLevel } from '@/types/decision-tree';
 import { SummaryTabToggle } from './SummaryTabToggle';
+import type { SummaryTab } from './SummaryTabToggle';
 import { SummaryLoadingState } from './SummaryLoadingState';
-import { EditableSection } from './EditableSection';
+import { UserFriendlySummary } from './UserFriendlySummary';
+import { DidWeGetThisRight } from './DidWeGetThisRight';
 import { MyAnswersView } from './MyAnswersView';
 import { UnansweredQuestionsPanel } from './UnansweredQuestionsPanel';
 import { ManualEditConflict } from './ManualEditConflict';
-import { SummaryExportBar } from './SummaryExportBar';
+import { UserExportBar } from './UserExportBar';
 
 const stageOrder: Stage[] = ['GATHER', 'REFINE', 'PRESENT'];
 
-const sectionConfig: { key: string; title: string; editable: boolean }[] = [
-  { key: 'executiveSummary', title: 'Executive Summary', editable: true },
-  { key: 'projectOverview', title: 'Project Overview', editable: true },
-  { key: 'dataClassification', title: 'Data Classification', editable: true },
-  { key: 'aiProcessingPlan', title: 'AI Processing Plan', editable: true },
-  { key: 'outputDeliverables', title: 'Output Deliverables', editable: true },
-  { key: 'feasibilitySummary', title: 'Feasibility Summary', editable: false },
-  { key: 'complianceAndNextSteps', title: 'Compliance & Next Steps', editable: true },
-];
+// Map user summary section keys to their display titles for conflict modal
+const userSectionTitles: Record<string, string> = {
+  user_yourProject: 'Your Project',
+  user_theData: 'The Data',
+  user_whatAIWouldHandle: 'What AI Would Handle',
+  user_howYoudSeeResults: "How You'd See Results",
+};
 
 export function AISummaryView() {
   const store = useSessionStore();
@@ -38,28 +39,35 @@ export function AISummaryView() {
     presentDetails,
     gapAnalysis,
     answerGapQuestion,
+    userSummaryPromptDismissed,
+    dismissUserSummaryPrompt,
+    conversationalAnswers,
+    stageAnswers,
   } = store;
 
   const allComplete = stageOrder.every((s) => stages[s].status === 'complete');
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<'ai-summary' | 'my-answers'>('ai-summary');
+  // Tab state — default to "Your Summary"
+  const [activeTab, setActiveTab] = useState<SummaryTab>('your-summary');
 
-  // Gap analysis questions and reclassification from the store
+  // Gap analysis questions and reclassification
   const gapQuestions = gapAnalysis.questions;
   const reclassification = gapAnalysis.reclassification ?? null;
 
-  // AI Summary hook
+  // User summary hook (Spec 02)
   const {
     status: summaryStatus,
     sections,
     manualEdits,
     errorMessage,
-    generateSummary,
+    timeSavings,
+    whatsNext,
+    fallback,
+    generateUserSummary,
     editSection,
     acceptNewForSection,
     getConflictingSections,
-  } = useAISummary();
+  } = useUserSummary();
 
   // Conflict resolution state
   const [conflictKey, setConflictKey] = useState<string | null>(null);
@@ -67,7 +75,7 @@ export function AISummaryView() {
   // Submitting state
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // AbortController ref for summary generation
+  // AbortController ref
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Cleanup abort controller on unmount
@@ -77,7 +85,7 @@ export function AISummaryView() {
     };
   }, []);
 
-  // Build intake payload helper — single source of truth
+  // Build intake payload
   const buildPayload = useCallback((): IntakePayload => {
     const summaryState = {
       sessionId: store.sessionId,
@@ -88,11 +96,13 @@ export function AISummaryView() {
       refineDetails,
       presentResult: stages.PRESENT.result,
       presentDetails,
+      conversationalAnswers,
+      stageAnswers,
     };
     return buildIntakeJson(summaryState);
-  }, [store.sessionId, projectIdea, stages, gatherDetails, refineDetails, presentDetails]);
+  }, [store.sessionId, projectIdea, stages, gatherDetails, refineDetails, presentDetails, conversationalAnswers, stageAnswers]);
 
-  // Helper to get the SummaryState object for copy/share (avoids duplicating the shape)
+  // Summary state helper for share/copy
   const getSummaryState = useCallback(() => ({
     sessionId: store.sessionId,
     projectIdea,
@@ -102,26 +112,27 @@ export function AISummaryView() {
     refineDetails,
     presentResult: stages.PRESENT.result,
     presentDetails,
-  }), [store.sessionId, projectIdea, stages, gatherDetails, refineDetails, presentDetails]);
+    conversationalAnswers,
+    stageAnswers,
+  }), [store.sessionId, projectIdea, stages, gatherDetails, refineDetails, presentDetails, conversationalAnswers, stageAnswers]);
 
-  // Fire a summary generation call with abort support
+  // Fire user summary generation
   const triggerGeneration = useCallback(
     (payload: IntakePayload, answeredQuestions: typeof gapQuestions) => {
-      // Abort any in-flight request
       abortControllerRef.current?.abort();
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
-      generateSummary(
+      generateUserSummary(
         payload,
         answeredQuestions.filter((q) => q.status === 'answered'),
         controller.signal,
       );
     },
-    [generateSummary],
+    [generateUserSummary],
   );
 
-  // Auto-generate summary on mount if all stages complete and no summary yet
+  // Auto-generate on mount if all stages complete and no summary yet
   useEffect(() => {
     if (allComplete && summaryStatus === 'idle') {
       const payload = buildPayload();
@@ -140,14 +151,10 @@ export function AISummaryView() {
     }
   }, [summaryStatus, getConflictingSections]);
 
-  // Handle answering a snoozed question
+  // Handle answering a snoozed question — triggers regeneration
   const handleAnswerSnoozed = useCallback(
     (id: string, answer: string, selectedOptions?: string[]) => {
-      // Update the store first
       answerGapQuestion(id, answer, selectedOptions);
-
-      // Read latest questions from the store after the update.
-      // Zustand's setState is synchronous, so getState() reflects the update immediately.
       const latestQuestions = useSessionStore.getState().gapAnalysis.questions;
       const payload = buildPayload();
       triggerGeneration(payload, latestQuestions);
@@ -155,67 +162,53 @@ export function AISummaryView() {
     [answerGapQuestion, buildPayload, triggerGeneration],
   );
 
-  // Export handlers — all use buildPayload() / getSummaryState()
-  const handleDownloadJson = () => {
-    const payload = buildPayload();
-    downloadJson(payload);
-  };
-
-  const handleCopyMarkdown = async () => {
-    await copyToClipboard(getSummaryState());
-  };
-
-  const handleShareEmail = () => {
-    shareSummary(getSummaryState());
-  };
-
-  const handlePrint = () => {
+  // Export handlers
+  const handleDownloadPdf = () => {
     window.print();
+  };
+
+  const handleShare = () => {
+    shareSummary(getSummaryState());
   };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const { postSubmit } = await import('@/lib/api-client');
       const payload = buildPayload();
       const latestQuestions = useSessionStore.getState().gapAnalysis.questions;
       await postSubmit({
         intakePayload: payload,
         gapAnswers: latestQuestions.filter((q) => q.status === 'answered'),
-        aiSummary: sections,
+        userSummary: sections,
         manualEdits,
       });
     } catch {
-      // Submit failed — could show error toast
+      // Submit failed
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Accept reclassification
+  // Reclassification handlers
   const handleAcceptReclassification = () => {
     if (!reclassification) return;
     store.applyReclassification(reclassification.suggestedLevel);
   };
 
   const handleDismissReclassification = () => {
-    // Clear the reclassification without applying it.
-    // applyReclassification already clears it in the store; for dismiss we just
-    // need to clear the reclassification field. We can reuse the store setter
-    // by setting the gap analysis result without a reclassification.
-    // Simplest: apply current level (no-op on protection level, clears flag).
     if (reclassification) {
       store.applyReclassification(reclassification.currentLevel);
     }
   };
 
-  // Snoozed questions for the panel
+  // Snoozed questions
   const snoozedQuestions = gapQuestions.filter((q) => q.status === 'snoozed');
 
-  // Conflict resolution
-  const conflictSection = conflictKey
-    ? sectionConfig.find((s) => s.key === conflictKey)
-    : null;
+  // Protection level for display
+  const protectionLevel: ProtectionLevel = stages.GATHER.result?.protectionLevel ?? 'P1';
+
+  // Conflict info
+  const conflictTitle = conflictKey ? userSectionTitles[conflictKey] ?? conflictKey : '';
 
   return (
     <motion.div
@@ -225,7 +218,7 @@ export function AISummaryView() {
       className="mx-auto max-w-2xl px-6 py-8"
     >
       {/* Back button */}
-      <div className="mb-4 print:hidden">
+      <div className="mb-4 print:hidden" data-no-print>
         <button
           onClick={() => navigate('/pipeline')}
           className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue transition-colors uppercase tracking-wider"
@@ -238,28 +231,27 @@ export function AISummaryView() {
       {/* Header */}
       <div className="mb-6 text-center">
         <h1 className="text-3xl font-bold text-navy mb-2">
-          {allComplete ? 'Your AI Tool Request' : 'Progress So Far'}
+          {allComplete ? "Here's What You Told Us" : 'Progress So Far'}
         </h1>
-        {!allComplete && (
+        {allComplete ? (
+          <p className="text-sm text-gray-500">
+            A quick recap of your AI request
+          </p>
+        ) : (
           <p className="text-sm text-gray-500">
             Complete all three stages to see your full summary.
           </p>
         )}
       </div>
 
-      {/* Unanswered Questions Panel */}
-      {snoozedQuestions.length > 0 && (
-        <div className="mb-6">
-          <UnansweredQuestionsPanel
-            questions={snoozedQuestions}
-            onAnswer={handleAnswerSnoozed}
-          />
-        </div>
+      {/* "Did we get this right?" banner */}
+      {allComplete && !userSummaryPromptDismissed && summaryStatus === 'ready' && (
+        <DidWeGetThisRight onDismiss={dismissUserSummaryPrompt} />
       )}
 
       {/* Reclassification Banner */}
       {reclassification && (
-        <div className="mb-6 rounded-lg border-2 border-orange/30 bg-orange/5 p-5">
+        <div data-reclassification-banner className="mb-6 rounded-lg border-2 border-orange/30 bg-orange/5 p-5">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-orange shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -304,7 +296,7 @@ export function AISummaryView() {
       <SummaryTabToggle activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Tab Content */}
-      {activeTab === 'ai-summary' ? (
+      {activeTab === 'your-summary' ? (
         <div className="space-y-4">
           {summaryStatus === 'loading' && (
             <SummaryLoadingState
@@ -317,47 +309,51 @@ export function AISummaryView() {
           )}
 
           {summaryStatus === 'error' && (
-            <div className="rounded-lg border-2 border-red-200 bg-red-50 p-5 text-center">
-              <p className="text-sm text-red-600 mb-3">
-                {errorMessage ?? 'Failed to generate summary. Please try again.'}
-              </p>
-              <button
-                onClick={() => {
-                  const payload = buildPayload();
-                  const latestQuestions = useSessionStore.getState().gapAnalysis.questions;
-                  triggerGeneration(payload, latestQuestions);
-                }}
-                className="rounded-lg bg-navy px-4 py-2 text-xs font-medium text-white uppercase tracking-wider hover:bg-blue transition-colors"
-              >
-                Try Again
-              </button>
+            <div className="space-y-4">
+              <div className="rounded-lg border-2 border-orange/20 bg-orange/5 p-5 text-center">
+                <p className="text-sm text-gray-600 mb-3">
+                  {errorMessage ?? 'We couldn\'t generate your summary right now. Here\'s what we have from your answers.'}
+                </p>
+                <button
+                  onClick={() => {
+                    const payload = buildPayload();
+                    const latestQuestions = useSessionStore.getState().gapAnalysis.questions;
+                    triggerGeneration(payload, latestQuestions);
+                  }}
+                  className="rounded-lg bg-navy px-4 py-2 text-xs font-medium text-white uppercase tracking-wider hover:bg-blue transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+              {/* Show fallback bullet-point view */}
+              <UserFriendlySummary
+                sections={null}
+                manualEdits={manualEdits}
+                onEdit={editSection}
+                timeSavings={timeSavings}
+                whatsNext={whatsNext}
+                fallback={fallback}
+                _protectionLevel={protectionLevel}
+              />
             </div>
           )}
 
-          {summaryStatus === 'ready' && sections && (
-            <>
-              {sectionConfig.map((sec) => {
-                const content =
-                  sections[sec.key as keyof typeof sections] ?? '';
-                return (
-                  <EditableSection
-                    key={sec.key}
-                    sectionKey={sec.key}
-                    title={sec.title}
-                    content={content}
-                    manualEdit={manualEdits[sec.key]}
-                    onEdit={editSection}
-                    editable={sec.editable}
-                  />
-                );
-              })}
-            </>
+          {(summaryStatus === 'ready' || (summaryStatus === 'loading' && sections)) && (
+            <UserFriendlySummary
+              sections={sections}
+              manualEdits={manualEdits}
+              onEdit={editSection}
+              timeSavings={timeSavings}
+              whatsNext={whatsNext}
+              fallback={fallback}
+              _protectionLevel={protectionLevel}
+            />
           )}
 
           {summaryStatus === 'idle' && !allComplete && (
             <div className="text-center py-12">
               <p className="text-sm text-gray-500">
-                Complete all three pipeline stages to generate your AI summary.
+                Complete all three pipeline stages to generate your summary.
               </p>
             </div>
           )}
@@ -373,29 +369,39 @@ export function AISummaryView() {
         />
       )}
 
+      {/* Unanswered Questions — below summary content */}
+      {snoozedQuestions.length > 0 && (
+        <div className="mt-8">
+          <UnansweredQuestionsPanel
+            questions={snoozedQuestions}
+            onAnswer={handleAnswerSnoozed}
+          />
+        </div>
+      )}
+
       {/* Export Bar */}
       {allComplete && (
-        <SummaryExportBar
-          onDownloadJson={handleDownloadJson}
-          onCopyMarkdown={handleCopyMarkdown}
-          onShareEmail={handleShareEmail}
-          onPrint={handlePrint}
+        <UserExportBar
+          onDownloadPdf={handleDownloadPdf}
+          onShare={handleShare}
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
         />
       )}
 
       {/* Manual Edit Conflict Modal */}
-      {conflictKey && conflictSection && sections && (
+      {conflictKey && sections && (
         <ManualEditConflict
           sectionKey={conflictKey}
-          sectionTitle={conflictSection.title}
+          sectionTitle={conflictTitle}
           currentEdit={manualEdits[conflictKey] ?? ''}
           newGenerated={
-            sections[conflictKey as keyof typeof sections] ?? ''
+            (() => {
+              const key = conflictKey.replace('user_', '');
+              return sections[key as keyof typeof sections] ?? '';
+            })()
           }
           onKeepEdit={() => {
-            // Keep the manual edit, move to next conflict
             const conflicts = getConflictingSections();
             const nextIdx = conflicts.indexOf(conflictKey) + 1;
             setConflictKey(nextIdx < conflicts.length ? conflicts[nextIdx] : null);

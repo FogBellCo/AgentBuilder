@@ -10,6 +10,7 @@ import type {
   GatherDetails,
   RefineDetails,
   PresentDetails,
+  ConversationalAnswers,
 } from '@/types/decision-tree';
 import type {
   GapAnalysisState,
@@ -17,19 +18,46 @@ import type {
   GapQuestion,
   Reclassification,
 } from '@/types/gap-analysis';
+import type { UserSummaryState, WorkloadDetails } from '@/types/summaries';
 import { generateId } from '@/lib/utils';
+
+const defaultUserSummary: UserSummaryState = {
+  status: 'idle',
+  sections: null,
+  manualEdits: {},
+};
 
 const defaultGapAnalysis: GapAnalysisState = {
   status: 'idle',
   questions: [],
   overallAssessment: '',
   runCount: 0,
+  completenessScore: 0,
+  readinessLabel: 'needs_work',
+  lastAnalyzedAt: null,
+  staticGaps: [],
 };
 
 const defaultAISummary: AISummaryState = {
   status: 'idle',
   sections: null,
   manualEdits: {},
+};
+
+const defaultConversationalAnswers: ConversationalAnswers = {
+  teamWho: '',
+  whyNow: [],
+  consequences: '',
+  workloadFrequency: '',
+  workloadDuration: '',
+  workloadPeople: '',
+  workloadPainPoint: '',
+  currentTools: [],
+  currentToolsOther: '',
+  magicWand: '',
+  onBehalf: '',
+  onBehalfName: '',
+  tritonGPT: '',
 };
 
 interface SessionState {
@@ -51,6 +79,14 @@ interface SessionState {
 
   // AI Summary
   aiSummary: AISummaryState;
+
+  // Conversational Answers
+  conversationalAnswers: ConversationalAnswers;
+
+  // User-Facing Summary (Spec 02)
+  userSummary: UserSummaryState;
+  workloadDetails: WorkloadDetails | null;
+  userSummaryPromptDismissed: boolean;
 
   // Actions
   setCurrentStage: (stage: Stage) => void;
@@ -75,6 +111,9 @@ interface SessionState {
   answerGapQuestion: (questionId: string, answer: string, selectedOptions?: string[]) => void;
   snoozeGapQuestion: (questionId: string) => void;
   unsnoozeGapQuestion: (questionId: string) => void;
+  updateCompletenessScore: (score: number, label: GapAnalysisState['readinessLabel']) => void;
+  setStaticGaps: (gaps: GapQuestion[]) => void;
+  setGapAnalysisFallback: (staticGaps: GapQuestion[]) => void;
 
   // AI Summary actions
   setAISummaryLoading: () => void;
@@ -82,6 +121,22 @@ interface SessionState {
   setAISummaryError: (message: string) => void;
   editSummarySection: (sectionKey: string, content: string) => void;
   clearManualEdit: (sectionKey: string) => void;
+
+  // Conversational answer actions
+  setConversationalAnswer: <K extends keyof ConversationalAnswers>(
+    key: K,
+    value: ConversationalAnswers[K]
+  ) => void;
+  setConversationalAnswers: (partial: Partial<ConversationalAnswers>) => void;
+
+  // User Summary actions (Spec 02)
+  setUserSummaryLoading: () => void;
+  setUserSummaryResult: (sections: UserSummaryState['sections']) => void;
+  setUserSummaryError: (message: string) => void;
+  editUserSummarySection: (sectionKey: string, content: string) => void;
+  clearUserSummaryEdit: (sectionKey: string) => void;
+  setWorkloadDetails: (details: WorkloadDetails) => void;
+  dismissUserSummaryPrompt: () => void;
 
   // Reclassification
   applyReclassification: (newLevel: ProtectionLevel) => void;
@@ -118,6 +173,14 @@ export const useSessionStore = create<SessionState>()(
 
       // AI Summary
       aiSummary: { ...defaultAISummary },
+
+      // Conversational Answers
+      conversationalAnswers: { ...defaultConversationalAnswers },
+
+      // User-Facing Summary (Spec 02)
+      userSummary: { ...defaultUserSummary },
+      workloadDetails: null,
+      userSummaryPromptDismissed: false,
 
       setCurrentStage: (stage) =>
         set((state) => ({
@@ -190,6 +253,10 @@ export const useSessionStore = create<SessionState>()(
           presentDetails: null,
           gapAnalysis: { ...defaultGapAnalysis },
           aiSummary: { ...defaultAISummary },
+          conversationalAnswers: { ...defaultConversationalAnswers },
+          userSummary: { ...defaultUserSummary },
+          workloadDetails: null,
+          userSummaryPromptDismissed: false,
         }),
 
       getEffectiveProtectionLevel: () => {
@@ -204,6 +271,23 @@ export const useSessionStore = create<SessionState>()(
       setRefineDetails: (details) => set({ refineDetails: details }),
       setPresentDetails: (details) => set({ presentDetails: details }),
 
+      // Conversational answer actions
+      setConversationalAnswer: (key, value) =>
+        set((state) => ({
+          conversationalAnswers: {
+            ...state.conversationalAnswers,
+            [key]: value,
+          },
+        })),
+
+      setConversationalAnswers: (partial) =>
+        set((state) => ({
+          conversationalAnswers: {
+            ...state.conversationalAnswers,
+            ...partial,
+          },
+        })),
+
       // Gap Analysis actions
       setGapAnalysisLoading: () =>
         set((state) => ({
@@ -217,12 +301,14 @@ export const useSessionStore = create<SessionState>()(
       setGapAnalysisResult: (questions, assessment, reclassification) =>
         set((state) => ({
           gapAnalysis: {
+            ...state.gapAnalysis,
             status: 'ready',
             questions: questions.map((q) => ({ ...q, status: q.status ?? 'pending' })),
             overallAssessment: assessment,
             reclassification,
             errorMessage: undefined,
             runCount: state.gapAnalysis.runCount + 1,
+            lastAnalyzedAt: new Date().toISOString(),
           },
         })),
 
@@ -241,7 +327,7 @@ export const useSessionStore = create<SessionState>()(
             ...state.gapAnalysis,
             questions: state.gapAnalysis.questions.map((q) =>
               q.id === questionId
-                ? { ...q, status: 'answered' as const, answer, selectedOptions }
+                ? { ...q, status: 'answered' as const, answer, selectedOptions, answeredAt: new Date().toISOString() }
                 : q,
             ),
           },
@@ -252,7 +338,7 @@ export const useSessionStore = create<SessionState>()(
           gapAnalysis: {
             ...state.gapAnalysis,
             questions: state.gapAnalysis.questions.map((q) =>
-              q.id === questionId ? { ...q, status: 'snoozed' as const } : q,
+              q.id === questionId ? { ...q, status: 'snoozed' as const, snoozedAt: new Date().toISOString() } : q,
             ),
           },
         })),
@@ -262,8 +348,38 @@ export const useSessionStore = create<SessionState>()(
           gapAnalysis: {
             ...state.gapAnalysis,
             questions: state.gapAnalysis.questions.map((q) =>
-              q.id === questionId ? { ...q, status: 'pending' as const } : q,
+              q.id === questionId ? { ...q, status: 'pending' as const, snoozedAt: undefined } : q,
             ),
+          },
+        })),
+
+      updateCompletenessScore: (score, label) =>
+        set((state) => ({
+          gapAnalysis: {
+            ...state.gapAnalysis,
+            completenessScore: score,
+            readinessLabel: label,
+          },
+        })),
+
+      setStaticGaps: (gaps) =>
+        set((state) => ({
+          gapAnalysis: {
+            ...state.gapAnalysis,
+            staticGaps: gaps,
+          },
+        })),
+
+      setGapAnalysisFallback: (staticGaps) =>
+        set((state) => ({
+          gapAnalysis: {
+            ...state.gapAnalysis,
+            status: 'ready',
+            questions: staticGaps.map((q) => ({ ...q, status: q.status ?? ('pending' as const) })),
+            overallAssessment: '',
+            staticGaps,
+            lastAnalyzedAt: new Date().toISOString(),
+            runCount: state.gapAnalysis.runCount + 1,
           },
         })),
 
@@ -318,6 +434,63 @@ export const useSessionStore = create<SessionState>()(
           };
         }),
 
+      // User Summary actions (Spec 02)
+      setUserSummaryLoading: () =>
+        set((state) => ({
+          userSummary: {
+            ...state.userSummary,
+            status: 'loading',
+            errorMessage: undefined,
+          },
+        })),
+
+      setUserSummaryResult: (sections) =>
+        set((state) => ({
+          userSummary: {
+            ...state.userSummary,
+            status: 'ready',
+            sections,
+            errorMessage: undefined,
+          },
+        })),
+
+      setUserSummaryError: (message) =>
+        set((state) => ({
+          userSummary: {
+            ...state.userSummary,
+            status: 'error',
+            errorMessage: message,
+          },
+        })),
+
+      editUserSummarySection: (sectionKey, content) =>
+        set((state) => ({
+          userSummary: {
+            ...state.userSummary,
+            manualEdits: {
+              ...state.userSummary.manualEdits,
+              [sectionKey]: content,
+            },
+          },
+          // Dismiss the "did we get this right" prompt on first edit
+          userSummaryPromptDismissed: true,
+        })),
+
+      clearUserSummaryEdit: (sectionKey) =>
+        set((state) => {
+          const { [sectionKey]: _, ...rest } = state.userSummary.manualEdits;
+          return {
+            userSummary: {
+              ...state.userSummary,
+              manualEdits: rest,
+            },
+          };
+        }),
+
+      setWorkloadDetails: (details) => set({ workloadDetails: details }),
+
+      dismissUserSummaryPrompt: () => set({ userSummaryPromptDismissed: true }),
+
       // Reclassification
       applyReclassification: (newLevel) =>
         set((state) => {
@@ -356,6 +529,10 @@ export const useSessionStore = create<SessionState>()(
           presentDetails: snapshot.presentDetails as PresentDetails | null,
           gapAnalysis: (snapshot.gapAnalysis as GapAnalysisState) ?? { ...defaultGapAnalysis },
           aiSummary: (snapshot.aiSummary as AISummaryState) ?? { ...defaultAISummary },
+          conversationalAnswers: (snapshot.conversationalAnswers as ConversationalAnswers) ?? { ...defaultConversationalAnswers },
+          userSummary: (snapshot.userSummary as UserSummaryState) ?? { ...defaultUserSummary },
+          workloadDetails: (snapshot.workloadDetails as WorkloadDetails | null) ?? null,
+          userSummaryPromptDismissed: (snapshot.userSummaryPromptDismissed as boolean) ?? false,
         }),
 
       getSessionSnapshot: () => {
@@ -373,12 +550,16 @@ export const useSessionStore = create<SessionState>()(
           presentDetails: state.presentDetails,
           gapAnalysis: state.gapAnalysis,
           aiSummary: state.aiSummary,
+          conversationalAnswers: state.conversationalAnswers,
+          userSummary: state.userSummary,
+          workloadDetails: state.workloadDetails,
+          userSummaryPromptDismissed: state.userSummaryPromptDismissed,
         };
       },
     }),
     {
       name: 'ucsd-agentbuilder-session',
-      version: 5,
+      version: 7,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>;
         if (version < 2) {
@@ -412,11 +593,7 @@ export const useSessionStore = create<SessionState>()(
             projectIdea: projectIdea
               ? {
                   ...projectIdea,
-                  existingStatus: projectIdea.existingStatus ?? '',
-                  projectGoal: projectIdea.projectGoal ?? '',
                   currentProcess: projectIdea.currentProcess ?? '',
-                  projectComplexity: projectIdea.projectComplexity ?? '',
-                  preferredTool: projectIdea.preferredTool ?? '',
                 }
               : null,
             gatherDetails: gatherDetails
@@ -435,12 +612,39 @@ export const useSessionStore = create<SessionState>()(
               questions: [],
               overallAssessment: '',
               runCount: 0,
+              completenessScore: 0,
+              readinessLabel: 'needs_work',
+              lastAnalyzedAt: null,
+              staticGaps: [],
             },
             aiSummary: {
               status: 'idle',
               sections: null,
               manualEdits: {},
             },
+          };
+        }
+        if (version < 6) {
+          return {
+            ...state,
+            conversationalAnswers: { ...defaultConversationalAnswers },
+          };
+        }
+        if (version < 7) {
+          // Add user summary state + gap analysis new fields
+          const gapAnalysis = state.gapAnalysis as Record<string, unknown> | undefined;
+          return {
+            ...state,
+            gapAnalysis: {
+              ...(gapAnalysis ?? {}),
+              completenessScore: (gapAnalysis?.completenessScore as number) ?? 0,
+              readinessLabel: (gapAnalysis?.readinessLabel as string) ?? 'needs_work',
+              lastAnalyzedAt: (gapAnalysis?.lastAnalyzedAt as string | null) ?? null,
+              staticGaps: (gapAnalysis?.staticGaps as unknown[]) ?? [],
+            },
+            userSummary: { ...defaultUserSummary },
+            workloadDetails: null,
+            userSummaryPromptDismissed: false,
           };
         }
         return state;

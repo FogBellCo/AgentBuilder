@@ -6,11 +6,13 @@ import type {
   PresentDetails,
   ProtectionLevel,
   StageResult,
+  ConversationalAnswers,
 } from '@/types/decision-tree';
 import { protectionLevels } from '@/data/protection-levels';
 import { outputFormats } from '@/data/output-formats';
 import { checkFeasibility } from '@/lib/tree-engine';
 import { gatherTree } from '@/data/gather-tree';
+import { computeAllDerivedValues } from '@/lib/intake-calculations';
 
 // Build lookup for gather-start option IDs
 const gatherStartNode = gatherTree.find((n) => n.id === 'gather-start');
@@ -35,6 +37,8 @@ interface SummaryState {
   refineDetails: RefineDetails | null;
   presentResult: StageResult | undefined;
   presentDetails: PresentDetails | null;
+  conversationalAnswers?: ConversationalAnswers;
+  stageAnswers?: Record<string, Record<string, string>>;
 }
 
 export function buildIntakeJson(state: SummaryState): IntakePayload {
@@ -87,12 +91,7 @@ export function buildIntakeJson(state: SummaryState): IntakePayload {
       title: '',
       description: '',
       domain: '',
-      timeline: '',
-      existingStatus: '',
-      projectGoal: '',
       currentProcess: '',
-      projectComplexity: '',
-      preferredTool: '',
     },
     gather: {
       protectionLevel,
@@ -115,6 +114,17 @@ export function buildIntakeJson(state: SummaryState): IntakePayload {
       outputs: presentOutputs,
     },
     nextSteps: buildNextSteps(protectionLevel),
+    conversationalAnswers: state.conversationalAnswers,
+    derivedValues: state.conversationalAnswers
+      ? computeAllDerivedValues(
+          state.conversationalAnswers,
+          state.stageAnswers ?? {},
+          state.projectIdea,
+          state.gatherDetails,
+          state.presentDetails,
+          protectionLevel,
+        )
+      : undefined,
   };
 }
 
@@ -163,28 +173,13 @@ export function formatSummaryAsPlainText(state: SummaryState): string {
     if (payload.projectIdea.domain) {
       lines.push(`Domain: ${payload.projectIdea.domain}`);
     }
-    if (payload.projectIdea.timeline) {
-      lines.push(`Timeline: ${payload.projectIdea.timeline}`);
-    }
-    if (payload.projectIdea.projectGoal) {
-      lines.push(`Goal: ${payload.projectIdea.projectGoal}`);
-    }
-    if (payload.projectIdea.existingStatus) {
-      lines.push(`Current Status: ${payload.projectIdea.existingStatus}`);
-    }
     if (payload.projectIdea.currentProcess) {
       lines.push(`How It's Done Today: ${payload.projectIdea.currentProcess}`);
-    }
-    if (payload.projectIdea.projectComplexity) {
-      lines.push(`Complexity: ${payload.projectIdea.projectComplexity}`);
-    }
-    if (payload.projectIdea.preferredTool) {
-      lines.push(`Preferred Tool: ${payload.projectIdea.preferredTool}`);
     }
     lines.push('');
   }
 
-  lines.push('Data Classification');
+  lines.push('Your Data');
   lines.push('-------------------');
   lines.push(
     `Protection Level: ${payload.gather.protectionLevel} (${payload.gather.protectionLevelLabel})`,
@@ -195,10 +190,10 @@ export function formatSummaryAsPlainText(state: SummaryState): string {
     );
   }
   if (payload.gather.details.dataType.length > 0) {
-    lines.push(`Data Type: ${payload.gather.details.dataType.join(', ')}`);
+    lines.push(`Data Format: ${payload.gather.details.dataType.join(', ')}`);
   }
   if (payload.gather.details.sourceSystem) {
-    lines.push(`Source System: ${payload.gather.details.sourceSystem}`);
+    lines.push(`Where It Lives: ${payload.gather.details.sourceSystem}`);
   }
   if (payload.gather.details.dataSize) {
     lines.push(`Data Size: ${payload.gather.details.dataSize}`);
@@ -208,12 +203,12 @@ export function formatSummaryAsPlainText(state: SummaryState): string {
     payload.gather.details.regulatoryContext.length > 0 &&
     !(payload.gather.details.regulatoryContext.length === 1 && payload.gather.details.regulatoryContext[0] === 'none')
   ) {
-    lines.push(`Regulatory Context: ${payload.gather.details.regulatoryContext.join(', ')}`);
+    lines.push(`Special Rules: ${payload.gather.details.regulatoryContext.join(', ')}`);
   }
   lines.push('');
 
   if (payload.refine.refinements.length > 0) {
-    lines.push('Refinement Plan');
+    lines.push('AI Tasks');
     lines.push('---------------');
     payload.refine.refinements.forEach((r, i) => {
       lines.push(`${i + 1}. ${r.taskType}${r.description ? ` — ${r.description}` : ''}`);
@@ -305,4 +300,52 @@ export async function copyToClipboard(state: SummaryState): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// --- Spec 02: Full Export JSON ---
+
+import type { FullExportJSON, UserSummarySections, OSISummary } from '@/types/summaries';
+import type { GapQuestion } from '@/types/gap-analysis';
+
+export function buildFullExportJson(
+  intake: IntakePayload,
+  userSections: UserSummarySections | null,
+  timeSavings: string | null,
+  whatsNext: string,
+  osiSummary: OSISummary | null,
+  gapQuestions: GapQuestion[],
+  overallAssessment: string,
+  manualEdits: Record<string, string>,
+): FullExportJSON {
+  return {
+    version: '2.0.0',
+    exportedAt: new Date().toISOString(),
+    sessionId: intake.sessionId,
+    intake,
+    userSummary: {
+      yourProject: userSections?.yourProject ?? '',
+      theData: userSections?.theData ?? '',
+      whatAIWouldHandle: userSections?.whatAIWouldHandle ?? '',
+      howYoudSeeResults: userSections?.howYoudSeeResults ?? '',
+      timeSavings,
+      whatsNext,
+    },
+    osiSummary,
+    gapAnalysis: {
+      questions: gapQuestions,
+      overallAssessment,
+    },
+    manualEdits,
+  };
+}
+
+export function downloadFullExportJson(exportData: FullExportJSON): void {
+  const json = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ucsd-ai-intake-${exportData.sessionId}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
