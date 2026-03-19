@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSessionStore } from '@/store/session-store';
 import { WizardMode } from '@/components/wizard/WizardMode';
@@ -8,6 +8,7 @@ import { MultiFeasibilityCheck } from '@/components/present/MultiFeasibilityChec
 import { ClassificationResult } from '@/components/wizard/ClassificationResult';
 import { GatherDetailForm } from '@/components/gather/GatherDetailForm';
 import { RefineDetailForm } from '@/components/refine/RefineDetailForm';
+import { StageCompletionCelebration } from '@/components/wizard/StageCompletionCelebration';
 import { checkFeasibility } from '@/lib/tree-engine';
 import type {
   Stage as StageType,
@@ -36,7 +37,8 @@ export function Stage() {
   const {
     stages,
     setCurrentStage,
-    completeStage,
+    setCurrentNode,
+    recordAnswer,
     getEffectiveProtectionLevel,
     gatherDetails,
     refineDetails,
@@ -47,13 +49,35 @@ export function Stage() {
   const stage = (stageId?.toUpperCase() ?? 'GATHER') as StageType;
 
   const [showGuidance, setShowGuidance] = useState<string | null>(null);
-  const [presentStep, setPresentStep] = useState<'pick' | 'feasibility'>('pick');
+  const [presentStep, setPresentStep] = useState<'pick' | 'feasibility' | 'wizard'>('pick');
   const [selectedFormat, setSelectedFormat] = useState<OutputFormat | null>(null);
   const [selectedOutputs, setSelectedOutputs] = useState<
     Array<{ format: OutputFormat; description: string }>
   >([]);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [wasInWizard, setWasInWizard] = useState(false);
 
   const protectionLevel = getEffectiveProtectionLevel();
+
+  // Track when we are in wizard mode to detect completion
+  const isInWizard = stages[stage]?.status === 'in_progress' && stage !== 'PRESENT';
+  useEffect(() => {
+    if (isInWizard) {
+      setWasInWizard(true);
+    }
+  }, [isInWizard]);
+
+  // Detect stage completion after being in wizard
+  useEffect(() => {
+    if (wasInWizard && stages[stage]?.status === 'complete') {
+      setShowCelebration(true);
+      setWasInWizard(false);
+    }
+  }, [wasInWizard, stages, stage]);
+
+  const handleCelebrationComplete = useCallback(() => {
+    setShowCelebration(false);
+  }, []);
 
   const handleSelectFormat = (format: OutputFormatInfo) => {
     setSelectedFormat(format.format);
@@ -62,8 +86,19 @@ export function Stage() {
 
   const handleConfirmPresent = () => {
     if (selectedFormat) {
-      completeStage('PRESENT', protectionLevel, selectedFormat);
-      navigate('/summary');
+      // Record the format selection answer before entering wizard
+      recordAnswer('PRESENT', 'present-format', `pick-${selectedFormat === 'static_report' ? 'report' : selectedFormat === 'interactive_app' ? 'app' : selectedFormat === 'email_digest' ? 'email' : selectedFormat === 'slide_deck' ? 'slides' : selectedFormat === 'smart_alerts' ? 'alerts' : selectedFormat === 'knowledge_base' ? 'kb' : selectedFormat === 'api_feed' ? 'api' : selectedFormat === 'workflow_automation' ? 'automation' : selectedFormat === 'system_integration' ? 'integration' : selectedFormat === 'embedded_widget' ? 'widget' : selectedFormat}`);
+      // Save present details now so they're available for derived calculations
+      const outputSelections: OutputSelection[] = [{
+        format: selectedFormat,
+        description: '',
+        feasibility: checkFeasibility(selectedFormat, protectionLevel),
+      }];
+      setPresentDetails({ outputs: outputSelections });
+      // Enter wizard mode for the new present questions
+      setCurrentStage('PRESENT');
+      setCurrentNode('present-urgency');
+      setPresentStep('wizard');
     }
   };
 
@@ -85,9 +120,14 @@ export function Stage() {
 
     setPresentDetails({ outputs: outputSelections });
 
-    // Complete stage with the first format as the primary
-    completeStage('PRESENT', protectionLevel, selectedOutputs[0].format);
-    navigate('/summary');
+    // Record format selection for derived calculations
+    const firstFormat = selectedOutputs[0].format;
+    recordAnswer('PRESENT', 'present-format', `pick-${firstFormat === 'static_report' ? 'report' : firstFormat === 'interactive_app' ? 'app' : firstFormat === 'email_digest' ? 'email' : firstFormat === 'slide_deck' ? 'slides' : firstFormat === 'smart_alerts' ? 'alerts' : firstFormat === 'knowledge_base' ? 'kb' : firstFormat === 'api_feed' ? 'api' : firstFormat === 'workflow_automation' ? 'automation' : firstFormat === 'system_integration' ? 'integration' : firstFormat === 'embedded_widget' ? 'widget' : firstFormat}`);
+
+    // Enter wizard mode for the new present questions
+    setCurrentStage('PRESENT');
+    setCurrentNode('present-urgency');
+    setPresentStep('wizard');
   };
 
   // Initialize stage if needed
@@ -95,11 +135,34 @@ export function Stage() {
     setCurrentStage(stage);
   }
 
+  // If all stages are complete and details filled, redirect to gap-analysis
+  const allComplete = stages.GATHER.status === 'complete'
+    && stages.REFINE.status === 'complete'
+    && stages.PRESENT.status === 'complete';
+
+  useEffect(() => {
+    if (allComplete && gatherDetails && refineDetails) {
+      navigate('/gap-analysis', { replace: true });
+    }
+  }, [allComplete, gatherDetails, refineDetails, navigate]);
+
+  // Show celebration overlay after wizard completes
+  if (showCelebration) {
+    return (
+      <div className="wizard-overlay fixed inset-0 top-[57px] z-30 bg-white overflow-y-auto">
+        <StageCompletionCelebration
+          stage={stage}
+          onComplete={handleCelebrationComplete}
+        />
+      </div>
+    );
+  }
+
   // If stage is already complete, check if detail forms are needed
   if (stages[stage].status === 'complete' && stages[stage].result) {
     const result = stages[stage].result!;
 
-    // GATHER complete but no details yet → show detail form
+    // GATHER complete but no details yet -> show detail form
     if (stage === 'GATHER' && !gatherDetails) {
       return (
         <div className="mx-auto max-w-5xl px-6">
@@ -108,7 +171,7 @@ export function Stage() {
       );
     }
 
-    // REFINE complete but no details yet → show detail form
+    // REFINE complete but no details yet -> show detail form
     if (stage === 'REFINE' && !refineDetails) {
       const answers = stageAnswers.REFINE;
       return (
@@ -156,8 +219,13 @@ export function Stage() {
     );
   }
 
-  // PRESENT stage: multi-select flow with output picker + feasibility
+  // PRESENT stage: multi-select flow with output picker + feasibility + wizard
   if (stage === 'PRESENT') {
+    // Wizard mode for new present questions (after feasibility)
+    if (presentStep === 'wizard') {
+      return <WizardMode stage="PRESENT" />;
+    }
+
     if (presentStep === 'feasibility' && selectedOutputs.length > 0) {
       return (
         <div className="mx-auto max-w-5xl px-6 py-8">
@@ -196,9 +264,5 @@ export function Stage() {
   }
 
   // Default: wizard mode for GATHER and REFINE
-  return (
-    <div className="mx-auto max-w-5xl px-6">
-      <WizardMode stage={stage} />
-    </div>
-  );
+  return <WizardMode stage={stage} />;
 }

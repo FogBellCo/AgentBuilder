@@ -9,7 +9,7 @@ export function Breadcrumbs() {
   if (crumbs.length <= 1) return null;
 
   return (
-    <nav aria-label="Breadcrumb" className="border-b border-gray-100 bg-gray-50">
+    <nav data-breadcrumbs aria-label="Breadcrumb" className="border-b border-gray-100 bg-gray-50">
       <div className="mx-auto flex max-w-5xl items-center gap-1 px-6 py-2">
         {crumbs.map((crumb, i) => (
           <span key={i} className="flex items-center gap-1">

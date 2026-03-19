@@ -14,13 +14,13 @@ export function useBreadcrumbs(): Breadcrumb[] {
     const crumbs: Breadcrumb[] = [{ label: 'Home', path: '/' }];
 
     if (!currentStage) {
-      crumbs.push({ label: 'Pipeline', path: '/pipeline' });
+      crumbs.push({ label: 'Your Request', path: '/pipeline' });
       return crumbs;
     }
 
-    crumbs.push({ label: 'Pipeline', path: '/pipeline' });
+    crumbs.push({ label: 'Your Request', path: '/pipeline' });
 
-    const stageLabels = { GATHER: 'Gather', REFINE: 'Refine', PRESENT: 'Present' };
+    const stageLabels = { GATHER: 'Your Data', REFINE: 'Your Task', PRESENT: 'Your Output' };
     crumbs.push({ label: stageLabels[currentStage], path: `/stage/${currentStage.toLowerCase()}` });
 
     if (currentNodeId) {

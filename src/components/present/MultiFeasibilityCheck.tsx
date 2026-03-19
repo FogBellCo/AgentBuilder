@@ -45,14 +45,14 @@ export function MultiFeasibilityCheck({
     >
       <div className="mb-6 text-center">
         <h2 className="text-2xl font-bold text-navy mb-2">
-          Feasibility Check
+          Compatibility Check
         </h2>
         <p className="text-sm text-gray-500">
           Checking your selected formats against{' '}
           <span className="font-medium" style={{ color: levelInfo.color }}>
             {levelInfo.level} ({levelInfo.label})
           </span>{' '}
-          data classification.
+          data level.
         </p>
       </div>
 

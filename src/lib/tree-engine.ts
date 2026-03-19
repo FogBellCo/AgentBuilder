@@ -78,6 +78,9 @@ export function mapOptionIdToOutputFormat(optionId: string): OutputFormat | unde
     'pick-alerts': 'smart_alerts',
     'pick-kb': 'knowledge_base',
     'pick-api': 'api_feed',
+    'pick-automation': 'workflow_automation',
+    'pick-integration': 'system_integration',
+    'pick-widget': 'embedded_widget',
   };
   return mapping[optionId];
 }

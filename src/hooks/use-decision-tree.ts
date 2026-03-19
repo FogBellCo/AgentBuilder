@@ -41,6 +41,24 @@ export function useDecisionTree(stage: Stage) {
       recordAnswer(stage, currentNode.id, optionId);
       pushHistory(stage, currentNode.id);
 
+      // For free_text nodes, use node-level nextNodeId
+      if (currentNode.inputType === 'free_text') {
+        const nextId = currentNode.nextNodeId;
+        if (nextId === null || nextId === undefined) {
+          // End of stage
+          const answers = { ...stageAnswers[stage], [currentNode.id]: optionId };
+          const protectionLevel = classifyProtectionLevel(answers, stage) ??
+            (stages.GATHER.result?.protectionLevel ?? 'P1');
+          const outputFormat = stage === 'PRESENT'
+            ? mapOptionIdToOutputFormat(answers['present-format'] ?? '')
+            : undefined;
+          completeStage(stage, protectionLevel, outputFormat);
+        } else {
+          setCurrentNode(nextId);
+        }
+        return;
+      }
+
       const option = currentNode.options.find((o) => o.id === optionId);
       if (!option) return;
 
@@ -80,30 +98,49 @@ export function useDecisionTree(stage: Stage) {
         return;
       }
 
-      // Find the most restrictive protection level from all selected options
-      let highestLevel: ProtectionLevel = 'P1';
-      let highestRank = 0;
+      // If this node classifies protection level, find the most restrictive and navigate to confirm
+      if (currentNode.classifiesProtectionLevel) {
+        let highestLevel: ProtectionLevel = 'P1';
+        let highestRank = 0;
 
-      for (const optId of optionIds) {
-        const option = currentNode.options.find((o) => o.id === optId);
-        if (!option) continue;
+        for (const optId of optionIds) {
+          const option = currentNode.options.find((o) => o.id === optId);
+          if (!option) continue;
 
-        if (option.mapsToProtectionLevel) {
-          const rank = protectionLevelRank[option.mapsToProtectionLevel] ?? 0;
-          if (rank > highestRank) {
-            highestRank = rank;
-            highestLevel = option.mapsToProtectionLevel;
+          if (option.mapsToProtectionLevel) {
+            const rank = protectionLevelRank[option.mapsToProtectionLevel] ?? 0;
+            if (rank > highestRank) {
+              highestRank = rank;
+              highestLevel = option.mapsToProtectionLevel;
+            }
           }
         }
+
+        const confirmNodeId = confirmNodeForLevel[highestLevel];
+        if (confirmNodeId) {
+          setCurrentNode(confirmNodeId);
+        }
+        return;
       }
 
-      // Navigate to the confirmation screen for the most restrictive level
-      const confirmNodeId = confirmNodeForLevel[highestLevel];
-      if (confirmNodeId) {
-        setCurrentNode(confirmNodeId);
+      // For non-classification multi-choice: navigate using the first selected option's nextNodeId
+      const firstSelectedOption = currentNode.options.find((o) => optionIds.includes(o.id));
+      if (firstSelectedOption) {
+        if (firstSelectedOption.nextNodeId === null) {
+          // End of stage
+          const answers = { ...stageAnswers[stage], [currentNode.id]: combinedId };
+          const protectionLevel = classifyProtectionLevel(answers, stage) ??
+            (stages.GATHER.result?.protectionLevel ?? 'P1');
+          const outputFormat = stage === 'PRESENT'
+            ? mapOptionIdToOutputFormat(answers['present-format'] ?? '')
+            : undefined;
+          completeStage(stage, protectionLevel, outputFormat);
+        } else {
+          setCurrentNode(firstSelectedOption.nextNodeId);
+        }
       }
     },
-    [currentNode, stage, recordAnswer, pushHistory, setCurrentNode],
+    [currentNode, stage, stageAnswers, stages, recordAnswer, pushHistory, setCurrentNode, completeStage],
   );
 
   const goBack = useCallback(() => {

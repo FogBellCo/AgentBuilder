@@ -89,7 +89,7 @@ export function FeasibilityCheck({
               Suggested alternative
             </p>
             <p className="text-sm text-gray-700">
-              Consider using <span className="font-medium">{altFormatInfo.label}</span> instead — it's compatible with your data classification.
+              Consider using <span className="font-medium">{altFormatInfo.label}</span> instead — it's compatible with your data level.
             </p>
           </div>
         )}

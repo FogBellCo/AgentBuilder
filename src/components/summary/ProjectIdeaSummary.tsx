@@ -1,13 +1,6 @@
 import { Lightbulb } from 'lucide-react';
 import type { ProjectIdea } from '@/types/decision-tree';
 
-const timelineLabels: Record<string, string> = {
-  exploring: 'Just exploring',
-  this_quarter: 'This quarter',
-  this_month: 'This month',
-  immediate: 'Immediate need',
-};
-
 interface ProjectIdeaSummaryProps {
   idea: ProjectIdea;
 }
@@ -35,15 +28,17 @@ export function ProjectIdeaSummary({ idea }: ProjectIdeaSummaryProps) {
           </p>
         </div>
 
+        {idea.currentProcess && (
+          <div className="text-xs">
+            <span className="font-medium text-navy">How It's Done Today:</span>{' '}
+            <span className="text-gray-600">{idea.currentProcess}</span>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2">
           {idea.domain && (
             <span className="inline-block rounded-full bg-sand px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-navy">
               {idea.domain}
-            </span>
-          )}
-          {idea.timeline && (
-            <span className="inline-block rounded-full bg-blue/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-blue">
-              {timelineLabels[idea.timeline] ?? idea.timeline}
             </span>
           )}
         </div>

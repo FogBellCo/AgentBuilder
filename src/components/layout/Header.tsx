@@ -20,7 +20,7 @@ export function Header() {
               UC San Diego
             </div>
             <div className="text-xs text-gray-300 tracking-wider uppercase">
-              AI Workflow Guide
+              AI Tool Request
             </div>
           </div>
         </button>

@@ -11,9 +11,9 @@ export interface StageNodeData {
 }
 
 const stageConfig: Array<{ stage: Stage; label: string; tagline: string; icon: string }> = [
-  { stage: 'GATHER', label: 'Gather', tagline: 'Where is your data?', icon: 'Search' },
-  { stage: 'REFINE', label: 'Refine', tagline: 'What will AI do?', icon: 'Sliders' },
-  { stage: 'PRESENT', label: 'Present', tagline: 'How to show results?', icon: 'Monitor' },
+  { stage: 'GATHER', label: 'Your Data', tagline: 'Where is your data?', icon: 'Search' },
+  { stage: 'REFINE', label: 'Your Task', tagline: 'What should AI do?', icon: 'Sliders' },
+  { stage: 'PRESENT', label: 'Your Output', tagline: 'How to see results?', icon: 'Monitor' },
 ];
 
 export function buildPipelineNodes(

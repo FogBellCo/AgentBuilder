@@ -65,12 +65,12 @@ export function Pipeline() {
         </div>
 
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-navy mb-2">Your AI Workflow</h1>
+          <h1 className="text-2xl font-bold text-navy mb-2">Your AI Tool Request</h1>
           <p className="text-sm text-gray-500 mb-1">
-            We'll walk through three steps: figure out where your data lives, define what AI should do with it, and pick how you want to see the results. Click a stage below to get started.
+            Answer three quick sections so we can recommend the right AI tool for you. Click a section below to get started.
           </p>
           <p className="text-xs text-blue font-medium mt-2">
-            Project: {projectIdea.title}
+            Request: {projectIdea.title}
           </p>
         </div>
 
@@ -83,7 +83,7 @@ export function Pipeline() {
         {allComplete && (
           <div className="mt-8 text-center">
             <button
-              onClick={() => navigate('/summary')}
+              onClick={() => navigate('/gap-analysis')}
               className="rounded-lg bg-blue px-8 py-3 text-sm font-medium text-white hover:bg-navy transition-colors uppercase tracking-wider"
             >
               View Complete Summary
